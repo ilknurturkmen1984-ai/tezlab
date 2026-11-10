@@ -726,7 +726,7 @@ function anS(){const L=S.an.filter(a=>!a.del).sort((a,b)=>b.date.localeCompare(a
  <div class="card"><h3>Diğer analizler</h3><div class="sm">Analiz listeni ve yöntemleri (tekrar sayılarıyla) gönderdiğinde buraya yeni analiz türleri eklenecek.</div></div>
  <h2>Rapor</h2><div class="grid"><button onclick="anXl(0)">⬇ Excel</button><button onclick="anXl(1)">☁ Excel · Drive'a kaydet</button></div>`}
 function anNew(){const id='an'+Date.now().toString(36);
- const a={id,type:'km',date:todayISO(),title:'Etüv kurutma',temp:'',note:'',ts:Date.now(),blocks:AN_ORD.map(i=>{const x=S.ings.find(g=>g.id===i);return x?anBlk(x):null}).filter(Boolean)};
+ const a={id,type:'km',date:todayISO(),title:'Etüv kurutma',temp:'',dev:'',sd:todayISO(),st:'',ed:'',et:'',note:'',ts:Date.now(),blocks:[]};
  S.an.push(a);save();go('anD',id)}
 function anBlk(x){const p=AN_PRE[x.id]||x.n.slice(0,2).toUpperCase();
  return {id:'b'+Math.random().toString(36).slice(2,8),iid:x.id,name:x.n,pre:p,gross:x.id==='i3',rows:[1,2].map(n=>anRw(p,n))}}
@@ -742,10 +742,13 @@ function anD(){const a=anFind(V.id);if(!a)return `<button onclick="go('an')">←
  return `<style>.anh{display:grid;grid-template-columns:84px 1fr auto;gap:6px;align-items:center;margin-bottom:6px}.an3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.anr{padding:8px 0;border-bottom:1px solid var(--bd)}.anr:last-of-type{border-bottom:0}</style>
  <button onclick="go('an')">← Analizler</button><h1 style="font-size:20px">🧪 ${esc(a.title)}</h1>
  <div class="card"><div class="row"><div><label>Tarih</label><input type="date" value="${a.date}" onchange="anF('${a.id}','date',this.value)"></div><div><label>Etüv sıcaklığı (°C)</label><input inputmode="decimal" value="${esc(a.temp)}" onchange="anF('${a.id}','temp',this.value)"></div></div>
+ <label>Cihaz (etüv)</label><input list="anDevL" placeholder="Cihaz adı / modeli" value="${esc(a.dev||'')}" onchange="anF('${a.id}','dev',this.value)"><datalist id="anDevL">${[...new Set(S.an.map(x=>x.dev).filter(Boolean))].map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
+ <div class="row"><div><label>Başlangıç tarihi</label><input type="date" value="${a.sd||a.date||''}" onchange="anF('${a.id}','sd',this.value)"></div><div><label>Başlangıç saati</label><input type="time" value="${a.st||''}" onchange="anF('${a.id}','st',this.value)"></div></div>
+ <div class="row"><div><label>Bitiş tarihi</label><input type="date" value="${a.ed||''}" onchange="anF('${a.id}','ed',this.value)"></div><div><label>Bitiş saati</label><input type="time" value="${a.et||''}" onchange="anF('${a.id}','et',this.value)"></div></div>
  <label>Başlık</label><input value="${esc(a.title)}" onchange="anF('${a.id}','title',this.value)"><label>Not</label><textarea rows="2" onchange="anF('${a.id}','note',this.value)">${esc(a.note)}</textarea>
  <div class="sm" style="margin-top:8px">KM % = (son tartım − dara) ÷ örnek × 100. Son tartım, kap + kuru örnek ağırlığıdır.</div></div>
  ${a.blocks.map(b=>anBlock(a,b)).join('')}
- <div class="card"><h3>Bileşen ekle</h3><div class="row"><select id="anAdd">${S.ings.map(i=>`<option value="${i.id}">${esc(i.n)}</option>`).join('')}</select><button onclick="anAddB('${a.id}')">+ Ekle</button></div></div>
+ <div class="card"><h3>Bileşen ekle</h3>${a.blocks.length?'':'<div class="sm">Bu analizde çalıştığın bileşenleri seçip tek tek ekle.</div>'}<div class="row"><select id="anAdd">${S.ings.map(i=>`<option value="${i.id}">${esc(i.n)}</option>`).join('')}</select><button onclick="anAddB('${a.id}')">+ Ekle</button></div></div>
  <button class="red" style="width:100%" onclick="anDel('${a.id}')">🗑 Analizi sil</button>`}
 function anF(aid,k,v){const a=anFind(aid);if(!a)return;a[k]=v;anTouch(a)}
 function anR(aid,bid,rid,k,v){const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid),r=b&&b.rows.find(x=>x.id===rid);if(!r)return;r[k]=v.trim();anTouch(a);
@@ -761,7 +764,7 @@ function anApply(aid,bid){const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid),
  ask(`“${x.n}” için KM %${f2c(s.m)} olarak kaydedilsin mi? (Şu an: ${x.km==null?'girilmemiş':'%'+f2c(x.km)}) Raporlardaki teorik KM değerleri buna göre hesaplanır.`,()=>{x.km=+s.m.toFixed(2);save();toast('KM güncellendi ✓');draw()})}
 /* Analiz raporu */
 function anWB(){const rows=[],sum=[];
- S.an.filter(a=>!a.del).forEach(a=>a.blocks.forEach(b=>{b.rows.forEach(r=>{const x=anRow(b,r);rows.push({'Tarih':fdt(a.date),'Analiz':a.title,'Etüv °C':a.temp||'','Bileşen':b.name,'Örnek kodu':r.code,'Dara (g)':pf(r.dara)??'','Örnek (g)':x.net==null?'':+x.net.toFixed(4),'Son tartım (g)':pf(r.fin)??'','Kuru örnek (g)':x.dry==null?'':+x.dry.toFixed(4),'KM (%)':x.km==null?'':+x.km.toFixed(2),'Nem (%)':x.nem==null?'':+x.nem.toFixed(2),'Not':r.note||''})});
+ S.an.filter(a=>!a.del).forEach(a=>a.blocks.forEach(b=>{b.rows.forEach(r=>{const x=anRow(b,r);rows.push({'Tarih':fdt(a.date),'Analiz':a.title,'Etüv °C':a.temp||'','Cihaz':a.dev||'','Başlangıç':[a.sd,a.st].filter(Boolean).join(' '),'Bitiş':[a.ed,a.et].filter(Boolean).join(' '),'Bileşen':b.name,'Örnek kodu':r.code,'Dara (g)':pf(r.dara)??'','Örnek (g)':x.net==null?'':+x.net.toFixed(4),'Son tartım (g)':pf(r.fin)??'','Kuru örnek (g)':x.dry==null?'':+x.dry.toFixed(4),'KM (%)':x.km==null?'':+x.km.toFixed(2),'Nem (%)':x.nem==null?'':+x.nem.toFixed(2),'Not':r.note||''})});
   const s=anSt(b);sum.push({'Tarih':fdt(a.date),'Analiz':a.title,'Bileşen':b.name,'Tekrar (n)':s.n,'Ort. KM (%)':s.n?+s.m.toFixed(2):'','Ort. nem (%)':s.n?+(100-s.m).toFixed(2):'','SS':s.sd!=null?+s.sd.toFixed(2):'','CV (%)':s.cv!=null?+s.cv.toFixed(2):''})}));
  const wb=XLSX.utils.book_new();[['Kuru madde',rows],['Özet',sum]].forEach(([n,r])=>{const ws=XLSX.utils.json_to_sheet(r.length?r:[{}]);ws['!cols']=Object.keys(r[0]||{}).map(h=>({wch:Math.max(13,h.length+2)}));XLSX.utils.book_append_sheet(wb,ws,n)});return wb}
 async function anXl(drv){if(typeof XLSX==='undefined')return alert('Excel kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin.');
