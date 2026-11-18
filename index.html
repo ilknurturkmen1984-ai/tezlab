@@ -547,7 +547,7 @@ function drErr(e){const c=e&&e.code;
  if(c==='unavailable')return 'Bu masaüstü sürümünde Drive bağlantısı yok. Yedeği Temel veriler ekranından indirip Drive\'a elle yükleyebilirsin.';
  if(c==='needs_reauth')return 'Google oturumu doldu. Düğmeye tekrar basın.';
  if(c==='server_not_connected')return 'Google Drive bağlı değil. Claude ayarlarından Google Drive bağlantısını kurun ya da yenileyin.';
- if(c==='not_in_manifest'||c==='approval_required'||c==='consent_required'||c==='not_granted'||c==='blocked_by_policy'||c==='declined')return 'Drive erişimi için izin gerekiyor. İzin penceresinde "İzin ver" seçin.';
+ if(c==='not_in_manifest'||c==='approval_required'||c==='consent_required'||c==='not_granted'||c==='blocked_by_policy'||c==='declined')return 'Drive erişimi için izin gerekiyor. İzin penceresinde "İzin ver" seçin.'+(e&&e.message&&e.message!==c?' [Ayrıntı: '+e.message+']':'');
  if(c==='server_unavailable')return 'Drive şu an yanıt vermiyor, biraz sonra tekrar deneyin.';
  return 'Drive hatası: '+((e&&e.message)||c||'bilinmiyor')}
 async function drCall(tool,input){
