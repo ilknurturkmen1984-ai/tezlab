@@ -83,8 +83,8 @@ function getToken(){
  return new Promise((res,rej)=>{
   if(!window.google||!google.accounts||!google.accounts.oauth2)return rej(err('server_unavailable','Google giriş kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin.'));
   try{tc=google.accounts.oauth2.initTokenClient({client_id:CID,scope:SCOPE,
-   callback:r=>{if(r&&r.access_token){tok=r.access_token;exp=Date.now()+(r.expires_in||3600)*1000;lss('tezlab_gok','1');res(tok)}else rej(err('consent_required',(r&&r.error)||'İzin verilmedi'))},
-   error_callback:e=>rej(err('consent_required',(e&&e.type)==='popup_closed'?'Giriş penceresi kapatıldı':'Giriş penceresi açılamadı. Açılır pencerelere izin verin.'))});
+   callback:r=>{if(r&&r.access_token){tok=r.access_token;exp=Date.now()+(r.expires_in||3600)*1000;lss('tezlab_gok','1');res(tok)}else{try{localStorage.removeItem('tezlab_gok')}catch(x){}rej(err('consent_required','İzin verilmedi'+(r&&r.error?' ('+r.error+')':'')))}},
+   error_callback:e=>{try{localStorage.removeItem('tezlab_gok')}catch(x){}rej(err('consent_required',(e&&e.type)==='popup_closed'?'Giriş penceresi kapatıldı':'Giriş penceresi açılamadı. Açılır pencerelere izin verin.'))}});
    tc.requestAccessToken({prompt:lsg('tezlab_gok')?'':'consent'})}catch(e){rej(err('tool_error',e.message))}})}
 async function req(url,o){o=o||{};const t=await getToken();
  const r=await fetch(url,Object.assign({},o,{headers:Object.assign({Authorization:'Bearer '+t},o.headers||{})}));
