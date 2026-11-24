@@ -119,7 +119,7 @@ try{if(location.hash.indexOf('access_token=')>=0){const q=new URLSearchParams(lo
  const e=new URLSearchParams(location.search).get('error');if(e){window.GS_ERR='Google girişi tamamlanamadı: '+e;history.replaceState(null,'',location.pathname)}}catch(e){}
 /* ---- eşitleme ---- */
 const GS=window.GS={busy:false,gid:null,msg:'',H:{},hc:'',ready:false,t:null};
-const CFGK=['ings','models','fdModels','fm','fmn','tez'];
+const CFGK=['ings','models','fdModels','fm','fmn','fms','tez'];
 window.gsInit=function(){GS.H={};S.runs.forEach(r=>{GS.H[r.id]=stripTs(r)});GS.hc=JSON.stringify(cfgO());GS.ready=true;
  SY.st=GS.ready&&S.drv&&S.drv.sync?'☁ Son eşitleme: '+new Date(S.drv.sync).toLocaleString('tr-TR'):'📱 Bu cihazda · eşitlemek için ☁ Drive ekranını aç'};
 window.gsTouch=function(){if(!GS.ready)return;const n=Date.now();
@@ -187,7 +187,7 @@ const theo=c=>{let t=0;for(const it of c.items){const x=S.ings.find(a=>a.id===it
 let V={n:'home',id:null},F=null,RP='',ac=null,ringing=null,dis={};
 const go=(n,id,x)=>{V=Object.assign({n,id:id||null},x||{});draw();scrollTo(0,0)};
 const cur=()=>S.runs.find(x=>x.id===V.id);
-const fOpts=()=>[...new Set([...Array.from({length:24},(_,i)=>'F'+p2(i+1)),...Object.keys(S.fm)])];
+const fOpts=()=>[...new Set([...Array.from({length:24},(_,i)=>'F'+p2(i+1)),...Object.keys(S.fm)])].filter(k=>!(S.fms&&S.fms[k]));
 const fTpl=f=>(S.fm[f]||[]).map(o=>{const x=S.ings.find(a=>a.id===o.id);return x?Object.assign({},x,{rg:o.g}):null}).filter(Boolean);
 let HM={all:false},BF='';
 function newForm(d){d=d||todayISO();const u=LV().filter(r=>r.date===d).map(r=>r.mold);
@@ -231,7 +231,7 @@ const fmTabs=a=>`<div class="tabs2"><button onclick="go('home')">🏠 Ana sayfa<
 const rowsOf=k=>{const cur=S.fm[k]||[];return FIX.map(id=>{const o=cur.find(x=>x.id===id);return {id,g:o&&o.g!=null?String(o.g):''}}).concat(cur.filter(o=>!FIX.includes(o.id)).map(o=>({id:o.id,g:o.g!=null?String(o.g):''})))};
 let FE=null;
 function fmNew(){FE={old:'',code:fOpts().find(o=>!S.fm[o])||'',note:'',rows:FIX.map(id=>({id,g:id==='i1'||id==='i2'?'5':id==='i3'?'30':''}))};go('fmedit')}
-function fmOpen(k){FE={old:k,code:k,note:S.fmn[k]||'',rows:rowsOf(k)};go('fmedit')}
+function fmOpen(k){if(Date.now()-(window.__fmSw||0)<500)return;FE={old:k,code:k,note:S.fmn[k]||'',rows:rowsOf(k)};go('fmedit')}
 function fmSave(){const c=FE.code.trim().toUpperCase().replace(/['"<>]/g,''),rows=FE.rows.filter(r=>r.id);
  if(!c)return alert('F kodu girin');
  if(!rows.some(r=>parseFloat(r.g)>0))return alert('En az bir bileşene referans miktar girin');
@@ -247,10 +247,34 @@ function addIng(){const n=$('ni_n').value.trim(),k=$('ni_k').value;
 function fmScreen(){
  if(V.sub==='ing')return `${fmTabs('ing')}<h1>＋ Girdi ekle</h1><div class="card"><label>Girdi adı</label><input id="ni_n" placeholder="örn. Protein tozu"><label>Teorik kuru madde (%)</label><input id="ni_k" type="number" inputmode="decimal" step="0.01" min="0" max="100" placeholder="isteğe bağlı"><button class="pri" style="width:100%;margin-top:12px" onclick="addIng()">Kaydet</button></div>
  <h2>Mevcut girdiler</h2><div class="card">${S.ings.map(x=>`<div class="rc" style="padding:4px 0"><div><b>${esc(x.n)}</b></div><span class="tag">${FIX.includes(x.id)?'sabit · ':''}KM ${x.km??'—'}%</span></div>`).join('')}</div>`;
- const ks=Object.keys(S.fm).sort(),use=k=>LV().reduce((a,r)=>a+r.recs.filter(c=>c.f===k).length,0);
+ if(!S.fms)S.fms={};
+ const fst=t=>Object.keys(S.fm).filter(k=>S.fms[k]&&S.fms[k].t===t).sort(),nT=fst('del').length,nA=fst('arc').length;
+ if(V.sub==='trash'||V.sub==='arc'){const tr=V.sub==='trash',L=fst(tr?'del':'arc');
+  return `${fmTabs('')}<h1>${tr?'🗑 Model çöp kutusu':'📦 Model arşivi'}</h1><div class="sm" style="margin-bottom:10px">${tr?'Çöpe attığın F modelleri burada durur. Geri alabilir ya da kalıcı silebilirsin. Kayıtlı denemeler etkilenmez.':'Arşivlenen F modelleri kalıp girişindeki listede görünmez. İstediğinde geri alabilirsin.'}</div>
+  ${L.map(k=>`<div class="card"><div class="rc"><b class="mk" style="width:auto;border-radius:20px;padding:0 12px">${esc(k)}</b><div><b>${esc(S.fmn[k]||'')||'&nbsp;'}</b></div></div><div class="row"><button class="ok" onclick="fmBack('${k}')">↩ Geri al</button>${tr?`<button class="red" onclick="fmPurge('${k}')">Kalıcı sil</button>`:''}</div></div>`).join('')||'<div class="card sm" style="text-align:center">Burada model yok.</div>'}<button style="width:100%;margin-top:8px" onclick="go('fm')">← Modellere dön</button>`}
+ const ks=Object.keys(S.fm).filter(k=>!S.fms[k]).sort(),use=k=>LV().reduce((a,r)=>a+r.recs.filter(c=>c.f===k).length,0);
  return `${fmTabs('list')}<h1>🧬 F modelleri</h1><div class="sm" style="margin-bottom:10px">Her F modelinde ilk dört bileşen sabittir (ezilmiş gevrek, yulaf ezmesi, laktozsuz süt, cibre). Girdiğin miktarlar referanstır; kalıp girişinde F kodunu seçince açılır, tartıma göre düzeltirsin.</div>
  <button class="pri big2" onclick="fmNew()">＋ Yeni F kodu</button>
- ${ks.map(k=>`<div class="card item" onclick="fmOpen('${k}')"><div class="rc"><b class="mk" style="width:auto;border-radius:20px;padding:0 12px">${esc(k)}</b><div><b>${esc(S.fmn[k]||'')||'&nbsp;'}</b><div class="sm">${S.fm[k].map(o=>esc((S.ings.find(a=>a.id===o.id)||{n:'?'}).n)+' '+(o.g==null?'–':o.g)).join(' · ')}</div></div><span class="tag">${use(k)} göz</span></div></div>`).join('')||'<div class="card sm" style="text-align:center">Henüz F modeli yok. “Yeni F kodu” ile ilkini oluştur.</div>'}`}
+ <div class="sm" style="margin:6px 0 8px">İpucu: bir modele basılı tutup <b>sağa</b> kaydırırsan çöpe, <b>sola</b> kaydırırsan arşive gider.</div>
+ ${ks.map(k=>`<div class="card item" data-fm="${esc(k)}" onclick="fmOpen('${k}')"><div class="rc"><b class="mk" style="width:auto;border-radius:20px;padding:0 12px">${esc(k)}</b><div><b>${esc(S.fmn[k]||'')||'&nbsp;'}</b><div class="sm">${S.fm[k].map(o=>esc((S.ings.find(a=>a.id===o.id)||{n:'?'}).n)+' '+(o.g==null?'–':o.g)).join(' · ')}</div></div><span class="tag">${use(k)} göz</span></div></div>`).join('')||'<div class="card sm" style="text-align:center">Henüz F modeli yok. “Yeni F kodu” ile ilkini oluştur.</div>'}
+ <div class="row" style="margin-top:10px"><button onclick="go('fm',null,{sub:'trash'})">🗑 Çöp (${nT})</button><button onclick="go('fm',null,{sub:'arc'})">📦 Arşiv (${nA})</button></div>`}
+function fmTo(k,t){if(!S.fm[k])return;if(!S.fms)S.fms={};S.fms[k]={t,ts:Date.now()};save();toast(k+(t==='del'?' çöp kutusuna taşındı 🗑':' arşive taşındı 📦'));draw()}
+function fmBack(k){if(S.fms)delete S.fms[k];save();toast(k+' geri alındı ↩');draw()}
+function fmPurge(k){ask(k+' modeli kalıcı olarak silinsin mi? Geri alınamaz. (Kayıtlı denemeler etkilenmez)',()=>{delete S.fm[k];delete S.fmn[k];if(S.fms)delete S.fms[k];save();draw()})}
+(function(){const sty=document.createElement('style');sty.textContent='[data-fm],[data-an]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.fmarm{box-shadow:0 6px 18px rgba(0,0,0,.25);position:relative;z-index:3;transition:background .1s}';document.head.appendChild(sty);
+ let st=null;const card=e=>e.target&&e.target.closest?e.target.closest('[data-fm],[data-an]'):null;
+ const begin=(el,x,y)=>{st={el,x,y,dx:0,armed:false,t:setTimeout(()=>{if(st){st.armed=true;el.classList.add('fmarm');try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}}},380)}};
+ const move=(x,y,ev)=>{if(!st)return;const dx=x-st.x,dy=y-st.y;
+  if(!st.armed){if(Math.abs(dx)>10||Math.abs(dy)>10){clearTimeout(st.t);st=null}return}
+  if(ev.cancelable)ev.preventDefault();st.dx=dx;st.el.style.transform='translateX('+dx+'px)';st.el.style.background=dx>50?'#fde2e2':dx<-50?'#dbe8ff':''};
+ const end=()=>{if(!st)return;clearTimeout(st.t);const s=st;st=null;if(!s.armed)return;window.__fmSw=Date.now();s.el.classList.remove('fmarm');s.el.style.transform='';s.el.style.background='';
+  const k=s.el.getAttribute('data-fm'),ak=s.el.getAttribute('data-an');if(s.dx>90){ak?anTo(ak,'del'):fmTo(k,'del')}else if(s.dx<-90){ak?anTo(ak,'arc'):fmTo(k,'arc')}};
+ document.addEventListener('touchstart',e=>{const c=card(e);if(c&&e.touches.length===1)begin(c,e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
+ document.addEventListener('touchmove',e=>{if(st&&e.touches.length)move(e.touches[0].clientX,e.touches[0].clientY,e)},{passive:false});
+ document.addEventListener('touchend',end);document.addEventListener('touchcancel',()=>{if(st){clearTimeout(st.t);st.el.classList.remove('fmarm');st.el.style.transform='';st.el.style.background='';st=null}});
+ document.addEventListener('mousedown',e=>{const c=card(e);if(c&&e.button===0)begin(c,e.clientX,e.clientY)});
+ document.addEventListener('mousemove',e=>move(e.clientX,e.clientY,e));document.addEventListener('mouseup',end);
+ document.addEventListener('contextmenu',e=>{if(card(e))e.preventDefault()})})();
 function fmEdit(){const fx=id=>FIX.includes(id);
  return `${fmTabs('')}<h1>${FE.old?esc(FE.old)+' düzenle':'Yeni F kodu'}</h1><div class="card">
  <label>F kodu (kendi kodunu da yazabilirsin)</label><input value="${esc(FE.code)}" style="text-transform:uppercase" oninput="FE.code=this.value" placeholder="F25">
@@ -503,7 +527,7 @@ function rpt(k){const d=todayISO(),L=fl();k==='all'?xl(['ozet','kal','bil','hid'
 let DB=null,UID=null,SY={h:{},t:null,st:'📱 Yalnızca bu cihaz'};
 const dref=k=>DB.collection('data/users/'+UID).doc(k);
 const stripTs=o=>{const x=Object.assign({},o);delete x.ts;return JSON.stringify(x)};
-const cfgO=()=>({ings:S.ings,models:S.models,fdModels:S.fdModels,fm:S.fm,fmn:S.fmn,tez:S.tez,an:S.an});
+const cfgO=()=>({ings:S.ings,models:S.models,fdModels:S.fdModels,fm:S.fm,fmn:S.fmn,fms:S.fms||{},tez:S.tez,an:S.an});
 function lsSave(){try{localStorage.setItem(K2,JSON.stringify(S))}catch(e){}}
 function schedPush(){if(!DB)return;clearTimeout(SY.t);SY.t=setTimeout(pushAll,800)}
 async function pushAll(){if(!DB)return;
@@ -515,7 +539,7 @@ function onRemote(snap){let ch=false;
  snap.docChanges().forEach(c=>{const id=c.doc.id,d=c.doc.data()||{};
   if(c.type==='removed'){if(id.startsWith('r_')){const k=id.slice(2),n=S.runs.length;S.runs=S.runs.filter(r=>r.id!==k);delete SY.h[k];if(S.runs.length!==n)ch=true}return}
   if(!d.d)return;let o;try{o=JSON.parse(d.d)}catch(e){return}
-  if(id==='cfg'){const t=d.ts||0;if(t>(S.cts||0)){Object.assign(S,{ings:o.ings,models:o.models,fdModels:o.fdModels,fm:o.fm||{},fmn:o.fmn||{},tez:o.tez||[],an:o.an||S.an,cts:t});fmFix();SY.h.cfg=JSON.stringify(cfgO());ch=true}else if(t===(S.cts||0))SY.h.cfg=JSON.stringify(cfgO());return}
+  if(id==='cfg'){const t=d.ts||0;if(t>(S.cts||0)){Object.assign(S,{ings:o.ings,models:o.models,fdModels:o.fdModels,fm:o.fm||{},fmn:o.fmn||{},fms:o.fms||{},tez:o.tez||[],an:o.an||S.an,cts:t});fmFix();SY.h.cfg=JSON.stringify(cfgO());ch=true}else if(t===(S.cts||0))SY.h.cfg=JSON.stringify(cfgO());return}
   const l=S.runs.find(r=>r.id===o.id);
   if(!l||(d.ts||0)>(l.ts||0)){o.ts=d.ts;S.runs=S.runs.filter(r=>r.id!==o.id).concat(o);SY.h[o.id]=stripTs(o);ch=true}
   else if(d.ts===l.ts)SY.h[o.id]=stripTs(l)});
@@ -614,6 +638,7 @@ function mergeIn(b){let add=0,upd=0;
  (b.fdModels||[]).forEach(m=>{if(!S.fdModels.includes(m))S.fdModels.push(m)});
  Object.keys(b.fm||{}).forEach(k=>{if(!(k in S.fm))S.fm[k]=b.fm[k]});
  Object.keys(b.fmn||{}).forEach(k=>{if(!(k in S.fmn))S.fmn[k]=b.fmn[k]});
+ if(!S.fms)S.fms={};Object.keys(b.fms||{}).forEach(k=>{if(!(k in S.fms)||(b.fms[k].ts||0)>(S.fms[k].ts||0))S.fms[k]=b.fms[k]});
  (b.an||[]).forEach(a=>{const i=S.an.findIndex(x=>x.id===a.id);if(i<0)S.an.push(a);else if((a.ts||0)>(S.an[i].ts||0))S.an[i]=a});
  if(!S.tez.length&&(b.tez||[]).length)S.tez=b.tez;
  return {add,upd}}
@@ -726,11 +751,15 @@ const anResH=(b,r)=>{const x=anRow(b,r);return x.km==null?'<span class="sm">son 
 const anStH=b=>{const s=anSt(b);return s.n?`Ortalama KM <b>${f2c(s.m)} %</b> · nem ${f2c(100-s.m)} % · n=${s.n}${s.sd!=null?` · SS ${f2c(s.sd)} · CV ${f2c(s.cv)} %`:''}`:'<span class="sm">Henüz hesaplanan örnek yok</span>'};
 const anFind=(aid)=>S.an.find(x=>x.id===aid);
 function anTouch(a){a.ts=Date.now();save()}
-function anS(){const L=S.an.filter(a=>!a.del).sort((a,b)=>b.date.localeCompare(a.date));
+function anS(){const nT=S.an.filter(a=>a.del&&!a.gone).length,nA=S.an.filter(a=>a.arc&&!a.del).length;
+ if(V.sub==='trash'||V.sub==='arc')return anBin(V.sub==='trash');
+ const L=S.an.filter(a=>!a.del&&!a.arc).sort((a,b)=>b.date.localeCompare(a.date));
  return `<button onclick="go('home')">← Ana sayfa</button><h1>🧪 Analizler</h1>
  <div class="card"><h3>Kuru madde / nem (etüv)</h3><div class="sm">Dara, örnek ve son tartımı gir; KM % ve nem % otomatik hesaplanır. Ortalamayı girdinin teorik KM değerine uygulayabilirsin.</div><button class="pri" style="width:100%;margin-top:10px" onclick="anNew()">+ Yeni kuru madde analizi</button></div>
- ${L.map(a=>`<div class="card item" onclick="go('anD','${a.id}')"><b>${fdt(a.date)} · ${esc(a.title)}</b><div class="sm">${a.blocks.map(b=>esc(b.name)).join(', ')}</div><div class="sm">${a.blocks.reduce((n,b)=>n+b.rows.length,0)} örnek · son tartımı girilen: ${a.blocks.reduce((n,b)=>n+b.rows.filter(r=>pf(r.fin)!=null).length,0)}</div></div>`).join('')||'<div class="sm">Henüz analiz yok.</div>'}
+ <div class="sm" style="margin:6px 0 8px">İpucu: bir analize basılı tutup <b>sağa</b> kaydırırsan çöpe, <b>sola</b> kaydırırsan arşive gider.</div>
+ ${L.map(a=>`<div class="card item" data-an="${a.id}" onclick="anOpen('${a.id}')"><b>${fdt(a.date)} · ${esc(a.title)}</b><div class="sm">${a.blocks.map(b=>esc(b.name)).join(', ')}</div><div class="sm">${a.blocks.reduce((n,b)=>n+b.rows.length,0)} örnek · son tartımı girilen: ${a.blocks.reduce((n,b)=>n+b.rows.filter(r=>pf(r.fin)!=null).length,0)}</div></div>`).join('')||'<div class="sm">Henüz analiz yok.</div>'}
  <div class="card"><h3>Diğer analizler</h3><div class="sm">Analiz listeni ve yöntemleri (tekrar sayılarıyla) gönderdiğinde buraya yeni analiz türleri eklenecek.</div></div>
+ <div class="row" style="margin-top:10px"><button onclick="go('an',null,{sub:'trash'})">🗑 Çöp (${nT})</button><button onclick="go('an',null,{sub:'arc'})">📦 Arşiv (${nA})</button></div>
  <h2>Rapor</h2><div class="grid"><button onclick="anXl(0)">⬇ Excel</button><button onclick="anXl(1)">☁ Excel · Drive'a kaydet</button></div>`}
 function anNew(){const id='an'+Date.now().toString(36);
  const a={id,type:'km',date:todayISO(),title:'Etüv kurutma',temp:'',dev:'',sd:todayISO(),st:'',ed:'',et:'',note:'',ts:Date.now(),blocks:[]};
@@ -765,7 +794,14 @@ function anAddR(aid,bid){const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid);i
 function anAddB(aid){const a=anFind(aid),x=S.ings.find(g=>g.id===$('anAdd').value);if(!a||!x)return;a.blocks.push(anBlk(x));anTouch(a);draw()}
 function anDelR(aid,bid,rid){ask('Bu tekrar silinsin mi?',()=>{const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid);if(!b)return;b.rows=b.rows.filter(r=>r.id!==rid);anTouch(a);draw()})}
 function anDelB(aid,bid){ask('Bu bileşenin tüm tekrarları silinsin mi?',()=>{const a=anFind(aid);if(!a)return;a.blocks=a.blocks.filter(b=>b.id!==bid);anTouch(a);draw()})}
-function anDel(aid){ask('Bu analiz silinsin mi?',()=>{const a=anFind(aid);if(!a)return;a.del=true;anTouch(a);go('an')})}
+function anDel(aid){ask('Bu analiz çöp kutusuna taşınsın mı? (Çöp kutusundan geri alabilirsin)',()=>{const a=anFind(aid);if(!a)return;a.del=Date.now();anTouch(a);toast('Çöp kutusuna taşındı 🗑');go('an')})}
+function anOpen(id){if(Date.now()-(window.__fmSw||0)<500)return;go('anD',id)}
+function anTo(id,t){const a=anFind(id);if(!a)return;if(t==='del')a.del=Date.now();else a.arc=Date.now();anTouch(a);toast((a.title||'Analiz')+(t==='del'?' çöp kutusuna taşındı 🗑':' arşive taşındı 📦'));draw()}
+function anBack(id){const a=anFind(id);if(!a)return;if(a.del)delete a.del;else delete a.arc;anTouch(a);toast('Geri alındı ↩');draw()}
+function anPurge(id){ask('Bu analiz kalıcı olarak silinsin mi? Geri alınamaz.',()=>{const a=anFind(id);if(!a)return;a.gone=Date.now();a.del=a.del||Date.now();a.blocks=[];anTouch(a);draw()})}
+function anBin(tr){const L=S.an.filter(a=>tr?(a.del&&!a.gone):(a.arc&&!a.del)).sort((x,y)=>(tr?y.del-x.del:y.arc-x.arc));
+ return `<button onclick="go('an')">← Analizlere dön</button><h1>${tr?'🗑 Analiz çöp kutusu':'📦 Analiz arşivi'}</h1><div class="sm" style="margin-bottom:10px">${tr?'Çöpe attığın analizler burada durur. Geri alabilir ya da kalıcı silebilirsin. Çöptekiler raporlara girmez.':'Arşivlenen analizler ana listeden kalkar; verileri ve raporlardaki yeri korunur.'}</div>
+ ${L.map(a=>`<div class="card"><b>${fdt(a.date)} · ${esc(a.title)}</b><div class="sm">${a.blocks.map(b=>esc(b.name)).join(', ')}</div><div class="row">${tr?'':`<button onclick="go('anD','${a.id}')">Aç</button>`}<button class="ok" onclick="anBack('${a.id}')">↩ Geri al</button>${tr?`<button class="red" onclick="anPurge('${a.id}')">Kalıcı sil</button>`:''}</div></div>`).join('')||'<div class="card sm" style="text-align:center">Burada analiz yok.</div>'}`}
 function anApply(aid,bid){const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid),s=b&&anSt(b),x=b&&S.ings.find(g=>g.id===b.iid);
  if(!s||!s.n)return alert('Önce son tartımı girilmiş en az bir örnek gerekli');if(!x)return alert('Bu bileşen girdi listesinde yok');
  ask(`“${x.n}” için KM %${f2c(s.m)} olarak kaydedilsin mi? (Şu an: ${x.km==null?'girilmemiş':'%'+f2c(x.km)}) Raporlardaki teorik KM değerleri buna göre hesaplanır.`,()=>{x.km=+s.m.toFixed(2);save();toast('KM güncellendi ✓');draw()})}
