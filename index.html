@@ -167,8 +167,9 @@ S.runs.forEach(r=>{if(r.mold&&r.mold.length>1)r.mold=r.mold[0]});
 if(!S.kmSeed){S.kmSeed=1;[['i1',97.97],['i2',92.15],['i3',9.8]].forEach(([id,v])=>{const x=S.ings.find(a=>a.id===id);if(x&&x.km==null)x.km=v})}
 S.ings.forEach(x=>{if(x.id==='i5'&&x.n==='Girdi 5')x.n='Kabak çekirdeği küspesi';if(x.id==='i6'&&x.n==='Girdi 6')x.n='Keten tohumu küspesi'});
 if(!Array.isArray(S.an))S.an=[];
+S.an.forEach(a=>{if(a.title==='Etüv kurutma'){a.title='Kuru madde analizi';a.ts=Date.now()}});
 if(!S.anSeed){S.anSeed=1;if(!S.an.some(a=>a.id==='an_20261110')){const B=(iid,name,pre,gross,rows)=>({id:'b_'+pre.toLowerCase(),iid,name,pre,gross,rows:rows.map((r,i)=>({id:'r_'+pre.toLowerCase()+(i+1),code:pre+'-'+(i+1),dara:r[0],smp:r[1],fin:r[2]||'',note:''}))});
- S.an.push({id:'an_20261110',type:'km',date:'2026-11-10',title:'Etüv kurutma',temp:'',note:'Kurutma devam ediyor; son tartımlar sonra girilecek.',ts:1,blocks:[B('i3','Laktozsuz süt','S',true,[['2,3536','7,403'],['2,3943','7,4726']]),B('i5','Kabak çekirdeği küspesi','KC',false,[['2,3594','3,0091'],['2,431','3,0067']]),B('i6','Keten tohumu küspesi','KT',false,[['2,4253','3,007'],['2,3745','3,0059']]),B('i4','Cibre','C',false,[['2,3824','3,0052','5,0227'],['2,4162','3,0058','5,0621']]),B('i2','Yulaf ezmesi','Y',false,[['2,4212','3,0021'],['2,39','3,0091']]),B('i1','Ezilmiş gevrek','G',false,[['2,3742','3,0008'],['2,3762','3,0009']])]})}}
+ S.an.push({id:'an_20261110',type:'km',date:'2026-11-10',title:'Kuru madde analizi',temp:'',note:'Kurutma devam ediyor; son tartımlar sonra girilecek.',ts:1,blocks:[B('i3','Laktozsuz süt','S',true,[['2,3536','7,403'],['2,3943','7,4726']]),B('i5','Kabak çekirdeği küspesi','KC',false,[['2,3594','3,0091'],['2,431','3,0067']]),B('i6','Keten tohumu küspesi','KT',false,[['2,4253','3,007'],['2,3745','3,0059']]),B('i4','Cibre','C',false,[['2,3824','3,0052','5,0227'],['2,4162','3,0058','5,0621']]),B('i2','Yulaf ezmesi','Y',false,[['2,4212','3,0021'],['2,39','3,0091']]),B('i1','Ezilmiş gevrek','G',false,[['2,3742','3,0008'],['2,3762','3,0009']])]})}}
 const save=()=>{if(window.GSHIM)gsTouch();lsSave();schedPush();if(typeof drAuto==="function")drAuto()};
 const $=id=>document.getElementById(id);
 function toast(t){let e=$('toast');if(!e){e=document.createElement('div');e.id='toast';e.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;background:#1b1f24;color:#fff;border-radius:12px;padding:14px;font-weight:600;text-align:center;box-shadow:0 4px 16px #0006';document.body.appendChild(e)}e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3500)}
@@ -185,7 +186,42 @@ const HYD=25*60*1000;
 const ingN=it=>{const x=S.ings.find(a=>a.id===it.iid);return x?x.n:it.ing};
 const theo=c=>{let t=0;for(const it of c.items){const x=S.ings.find(a=>a.id===it.iid);if(!x||x.km==null)return null;t+=it.g*x.km/100}return +t.toFixed(3)};
 let V={n:'home',id:null},F=null,RP='',ac=null,ringing=null,dis={};
-const go=(n,id,x)=>{V=Object.assign({n,id:id||null},x||{});draw();scrollTo(0,0)};
+
+const SEL={on:false,ids:{}},NAV={d:0,pop:false,selP:false,skip:0,cur:'{"n":"home","id":null}'};
+const cp0=o=>JSON.parse(JSON.stringify(o));
+try{history.replaceState({V:{n:'home',id:null},d:0},'')}catch(e){}
+function navPush(){if(NAV.pop)return;try{const c=JSON.stringify(V);if(c===NAV.cur)return;NAV.cur=c;
+ if(V.n==='home'){if(NAV.d>0){const d=NAV.d;NAV.d=0;history.go(-d)}return}
+ NAV.d++;history.pushState({V:cp0(V),d:NAV.d},'')}catch(e){}}
+addEventListener('popstate',e=>{const st=e.state;
+ if(NAV.skip){NAV.skip=0;NAV.d=(st&&st.d)||0;return}
+ NAV.d=(st&&st.d)||0;SEL.on=false;NAV.selP=false;V=st&&st.V?cp0(st.V):{n:'home',id:null};NAV.cur=JSON.stringify(V);
+ NAV.pop=true;try{draw();scrollTo(0,0)}finally{NAV.pop=false}});
+addEventListener('keydown',e=>{if(e.key!=='Backspace'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target,tg=t&&t.tagName;
+ if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT'||(t&&t.isContentEditable))return;if(NAV.d>0){e.preventDefault();history.back()}});
+const selKey=el=>el.getAttribute('data-sk')+':'+el.getAttribute('data-sid');
+function selStart(el){if(SEL.on)return;SEL.on=true;SEL.ids={};SEL.ids[selKey(el)]=1;NAV.d++;try{history.pushState({V:cp0(V),d:NAV.d},'')}catch(e){}NAV.selP=true;try{navigator.vibrate&&navigator.vibrate(20)}catch(e){}draw()}
+function selEnd(){SEL.on=false;SEL.ids={};if(NAV.selP){NAV.selP=false;NAV.skip=1;try{history.back()}catch(e){NAV.skip=0}}draw()}
+function selAll(){const els=[...document.querySelectorAll('#app [data-sk]')],all=els.length&&els.every(e=>SEL.ids[selKey(e)]);els.forEach(e=>{const k=selKey(e);if(all)delete SEL.ids[k];else SEL.ids[k]=1});selDecor()}
+function selCtx(){const n=V.n,s=V.sub||'';if(n==='trash'||((n==='fm'||n==='an')&&s==='trash'))return 'trash';if(n==='arch'||((n==='fm'||n==='an')&&s==='arc'))return 'arc';return 'main'}
+function selBar(){const b=document.querySelector('.selbar');if(!b)return;const n=Object.keys(SEL.ids).length,c=selCtx(),tot=document.querySelectorAll('#app [data-sk]').length;
+ const A=c==='trash'?[['back','↩ Geri al'],['purge','🗑 Kalıcı sil']]:c==='arc'?[['back','↩ Arşivden çıkar'],['del','🗑 Çöpe']]:[['del','🗑 Çöpe'],['arc','📦 Arşive']];
+ b.innerHTML=`<div class="selrow"><b>${n} seçili</b><button onclick="selAll()">${n===tot&&tot?'Seçimi kaldır':'Tümünü seç'}</button><button class="x" onclick="selEnd()">✕</button></div><div class="selrow">${A.map(([a,t])=>`<button class="${a==='purge'||a==='del'?'red':'ok'}" ${n?'':'disabled'} onclick="selDo('${a}')">${t}</button>`).join('')}</div>`}
+function selDecor(){document.querySelectorAll('.selbar').forEach(x=>x.remove());const app=$('app');if(!app)return;app.classList.toggle('selmode',SEL.on);if(!SEL.on)return;
+ [...app.querySelectorAll('[data-sk]')].forEach(el=>{const on=!!SEL.ids[selKey(el)];el.classList.toggle('selon',on);let c=el.querySelector(':scope>.selbox');if(!c){c=document.createElement('input');c.type='checkbox';c.className='selbox';c.tabIndex=-1;el.insertBefore(c,el.firstChild)}c.checked=on});
+ const b=document.createElement('div');b.className='selbar';document.body.appendChild(b);selBar()}
+function selDo(act){const keys=Object.keys(SEL.ids);if(!keys.length)return;const g={};keys.forEach(k=>{const i=k.indexOf(':'),t=k.slice(0,i);(g[t]=g[t]||[]).push(k.slice(i+1))});
+ const go2=()=>{const c=selCtx(),t=Date.now();let n=0;
+  (g.run||[]).forEach(id=>{const r=S.runs.find(x=>x.id===id);if(!r)return;n++;if(act==='del')r.del=t;else if(act==='arc')r.arc=t;else if(act==='back'){if(c==='trash')delete r.del;else delete r.arc}});
+  if(act==='purge'&&(g.run||[]).length)dropRuns(S.runs.filter(r=>g.run.includes(r.id)));
+  (g.fm||[]).forEach(k=>{if(!S.fm[k])return;n++;if(!S.fms)S.fms={};if(act==='del'||act==='arc')S.fms[k]={t:act,ts:t};else if(act==='back')delete S.fms[k];else if(act==='purge'){delete S.fm[k];delete S.fmn[k];delete S.fms[k]}});
+  (g.an||[]).forEach(id=>{const a=S.an.find(x=>x.id===id);if(!a)return;n++;if(act==='del')a.del=t;else if(act==='arc')a.arc=t;else if(act==='back'){if(c==='trash')delete a.del;else delete a.arc}else if(act==='purge'){a.gone=t;a.del=a.del||t;a.blocks=[]}a.ts=t});
+  save();selEnd();toast(n+' öğe '+({del:'çöpe taşındı 🗑',arc:'arşive taşındı 📦',back:'geri alındı ↩',purge:'kalıcı olarak silindi'})[act])};
+ act==='purge'?ask(keys.length+' öğe kalıcı olarak silinsin mi? Geri alınamaz.',go2):go2()}
+document.addEventListener('click',e=>{if(!SEL.on)return;if(e.target.closest&&e.target.closest('.selbar'))return;const el=e.target.closest&&e.target.closest('#app [data-sk]');if(!el)return;
+ e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();const k=selKey(el);if(SEL.ids[k])delete SEL.ids[k];else SEL.ids[k]=1;selDecor()},true);
+(function(){const st=document.createElement('style');st.textContent='[data-sk]{position:relative}.selbox{position:absolute;top:12px;right:12px;width:26px;height:26px;margin:0;z-index:2;pointer-events:none}.selon{outline:2px solid #2d6cdf;background:#eef4ff!important}.selmode [data-sk]{padding-right:48px}#app.selmode{padding-bottom:140px}.selbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid #d0d5dd;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 14px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:8px}.selrow{display:flex;gap:8px;align-items:center}.selrow b{flex:1}.selrow button{flex:1}.selrow button.x{flex:0 0 52px}';document.head.appendChild(st)})();
+const go=(n,id,x)=>{if(SEL.on){SEL.on=false;NAV.selP=false}V=Object.assign({n,id:id||null},x||{});draw();scrollTo(0,0);navPush()};
 const cur=()=>S.runs.find(x=>x.id===V.id);
 const fOpts=()=>[...new Set([...Array.from({length:24},(_,i)=>'F'+p2(i+1)),...Object.keys(S.fm)])].filter(k=>!(S.fms&&S.fms[k]));
 const fTpl=f=>(S.fm[f]||[]).map(o=>{const x=S.ings.find(a=>a.id===o.id);return x?Object.assign({},x,{rg:o.g}):null}).filter(Boolean);
@@ -211,13 +247,13 @@ function activePanel(){const L=L0().filter(isAct);if(!L.length)return '';
   const st=(k,t)=>r[k].start&&!r[k].stop?`<div class="ln c-${k}" onclick="event.stopPropagation();go('detail','${r.id}',{tab:'${k}'})"><div style="flex:1"><b>${t}</b><div class="sm">${esc(r[k].model||'')}${k==='df'&&r.df.temp!=null?' · '+r.df.temp+' °C':''} · ${new Date(r[k].start).toLocaleTimeString('tr-TR')}</div></div><b class="tm" id="st-${r.id}-${k}" style="color:var(--${k})"></b><button class="${k}" onclick="event.stopPropagation();tm('${k}','stop','${r.id}')">■ Durdur</button></div>`:'';
   return `<div class="card item" onclick="go('detail','${r.id}',{tab:'${tab}'})"><div class="rc"><b class="mk">${esc(r.mold)}</b><div><b>Kalıp ${esc(r.mold)}</b><div class="sm">${fdt(r.date)} · ${r.recs.length} göz</div></div></div>
   ${hs.map(c=>`<div class="ln c-hy" onclick="event.stopPropagation();go('detail','${r.id}',{tab:'hyd',pos:${c.pos}})"><div style="flex:1"><b>${esc(r.mold)}${c.pos}</b> · ${esc(c.f)}<div class="sm">${new Date(c.hyd.start).toLocaleTimeString('tr-TR')} başladı</div></div><b class="tm" id="hy-${r.id}-${c.pos}"></b><button class="hy" onclick="event.stopPropagation();hy('${r.id}',${c.pos},'stop')">🔕 Durdur</button></div>`).join('')}${st('df','❄️ Deepfreeze')}${st('fd','🌬️ Freeze dryer')}</div>`}).join('')}
-const runCard=r=>`<div class="card item" onclick="go('detail','${r.id}')"><div class="rc"><b class="mk">${esc(r.mold)}</b><div><b>${fdt(r.date)}</b><div class="sm">${r.recs.map(c=>esc(r.mold)+c.pos+' '+esc(c.f)).join(' · ')}</div></div>${need(r)?'<span class="tag nt blink">⚠ Veri girişi</span>':`<span class="tag">${status(r)}</span>`}</div></div>`;
+const runCard=r=>`<div class="card item" data-sk="run" data-sid="${r.id}" onclick="go('detail','${r.id}')"><div class="rc"><b class="mk">${esc(r.mold)}</b><div><b>${fdt(r.date)}</b><div class="sm">${r.recs.map(c=>esc(r.mold)+c.pos+' '+esc(c.f)).join(' · ')}</div></div>${need(r)?'<span class="tag nt blink">⚠ Veri girişi</span>':`<span class="tag">${status(r)}</span>`}</div></div>`;
 const GT={hyd:'💧 Hidratasyon',df:'❄️ Deepfreeze',ms:'⚖️ Donuk kütle girişi',fd:'🌬️ Freeze dryer',fds:'📝 FD son değerleri',dry:'🧮 Kuru kütle girişi',done:'✅ Tamamlanan'};
 const grpK=r=>TO.find(k=>sst(r,k)!==2)||'done';
 function grpList(){
  if(!L0().length)return '<div class="card sm" style="text-align:center">İlk kalıbı oluşturmak için “Yeni kalıp” tuşuna dokun.</div>';
  const G={};L0().forEach(r=>(G[grpK(r)]=G[grpK(r)]||[]).push(r));
- return '<h2>Kalıplar · kalan işleme göre</h2>'+[...TO,'done'].filter(k=>G[k]).map(k=>{const L=G[k],lim=k==='done'&&!HM.all?L.slice(0,5):L;
+ return '<h2>Kalıplar · kalan işleme göre</h2><div class="sm" style="margin:-4px 0 6px">Bir kalıba basılı tutup bırakırsan seçim kutuları açılır.</div>'+[...TO,'done'].filter(k=>G[k]).map(k=>{const L=G[k],lim=k==='done'&&!HM.all?L.slice(0,5):L;
   return `<div class="gh">${k==='done'?'':'Sıradaki: '}${GT[k]} <span class="tag">${L.length}</span>${k==='done'?'<button style="margin-left:auto;min-height:34px;padding:4px 10px" onclick="arcDone()">📦 Tümünü arşivle</button>':''}</div>${lim.map(runCard).join('')}${k==='done'&&L.length>5?`<button style="width:100%" onclick="HM.all=!HM.all;draw()">${HM.all?'Daha az göster':'Tümünü göster ('+L.length+')'}</button>`:''}`}).join('')}
 const FIX=['i1','i2','i3','i4','i5','i6'];
 const LV=()=>S.runs.filter(r=>!r.del),L0=()=>S.runs.filter(r=>!r.del&&!r.arc);
@@ -251,24 +287,25 @@ function fmScreen(){
  const fst=t=>Object.keys(S.fm).filter(k=>S.fms[k]&&S.fms[k].t===t).sort(),nT=fst('del').length,nA=fst('arc').length;
  if(V.sub==='trash'||V.sub==='arc'){const tr=V.sub==='trash',L=fst(tr?'del':'arc');
   return `${fmTabs('')}<h1>${tr?'🗑 Model çöp kutusu':'📦 Model arşivi'}</h1><div class="sm" style="margin-bottom:10px">${tr?'Çöpe attığın F modelleri burada durur. Geri alabilir ya da kalıcı silebilirsin. Kayıtlı denemeler etkilenmez.':'Arşivlenen F modelleri kalıp girişindeki listede görünmez. İstediğinde geri alabilirsin.'}</div>
-  ${L.map(k=>`<div class="card"><div class="rc"><b class="mk" style="width:auto;border-radius:20px;padding:0 12px">${esc(k)}</b><div><b>${esc(S.fmn[k]||'')||'&nbsp;'}</b></div></div><div class="row"><button class="ok" onclick="fmBack('${k}')">↩ Geri al</button>${tr?`<button class="red" onclick="fmPurge('${k}')">Kalıcı sil</button>`:''}</div></div>`).join('')||'<div class="card sm" style="text-align:center">Burada model yok.</div>'}<button style="width:100%;margin-top:8px" onclick="go('fm')">← Modellere dön</button>`}
+  ${tr&&L.length?`<button class="red" style="width:100%;margin-bottom:10px" onclick="fmEmpty()">🗑 Çöpü kalıcı sil (${L.length})</button>`:''}${L.map(k=>`<div class="card" data-sk="fm" data-sid="${esc(k)}"><div class="rc"><b class="mk" style="width:auto;border-radius:20px;padding:0 12px">${esc(k)}</b><div><b>${esc(S.fmn[k]||'')||'&nbsp;'}</b></div></div><div class="row"><button class="ok" onclick="fmBack('${k}')">↩ Geri al</button>${tr?`<button class="red" onclick="fmPurge('${k}')">Kalıcı sil</button>`:''}</div></div>`).join('')||'<div class="card sm" style="text-align:center">Burada model yok.</div>'}<button style="width:100%;margin-top:8px" onclick="go('fm')">← Modellere dön</button>`}
  const ks=Object.keys(S.fm).filter(k=>!S.fms[k]).sort(),use=k=>LV().reduce((a,r)=>a+r.recs.filter(c=>c.f===k).length,0);
  return `${fmTabs('list')}<h1>🧬 F modelleri</h1><div class="sm" style="margin-bottom:10px">Her F modelinde ilk dört bileşen sabittir (ezilmiş gevrek, yulaf ezmesi, laktozsuz süt, cibre). Girdiğin miktarlar referanstır; kalıp girişinde F kodunu seçince açılır, tartıma göre düzeltirsin.</div>
  <button class="pri big2" onclick="fmNew()">＋ Yeni F kodu</button>
- <div class="sm" style="margin:6px 0 8px">İpucu: bir modele basılı tutup <b>sağa</b> kaydırırsan çöpe, <b>sola</b> kaydırırsan arşive gider.</div>
- ${ks.map(k=>`<div class="card item" data-fm="${esc(k)}" onclick="fmOpen('${k}')"><div class="rc"><b class="mk" style="width:auto;border-radius:20px;padding:0 12px">${esc(k)}</b><div><b>${esc(S.fmn[k]||'')||'&nbsp;'}</b><div class="sm">${S.fm[k].map(o=>esc((S.ings.find(a=>a.id===o.id)||{n:'?'}).n)+' '+(o.g==null?'–':o.g)).join(' · ')}</div></div><span class="tag">${use(k)} göz</span></div></div>`).join('')||'<div class="card sm" style="text-align:center">Henüz F modeli yok. “Yeni F kodu” ile ilkini oluştur.</div>'}
+ <div class="sm" style="margin:6px 0 8px">İpucu: bir modele basılı tutup <b>sağa</b> kaydırırsan çöpe, <b>sola</b> kaydırırsan arşive gider. Kaydırmadan bırakırsan seçim kutuları açılır (toplu işlem).</div>
+ ${ks.map(k=>`<div class="card item" data-fm="${esc(k)}" data-sk="fm" data-sid="${esc(k)}" onclick="fmOpen('${k}')"><div class="rc"><b class="mk" style="width:auto;border-radius:20px;padding:0 12px">${esc(k)}</b><div><b>${esc(S.fmn[k]||'')||'&nbsp;'}</b><div class="sm">${S.fm[k].map(o=>esc((S.ings.find(a=>a.id===o.id)||{n:'?'}).n)+' '+(o.g==null?'–':o.g)).join(' · ')}</div></div><span class="tag">${use(k)} göz</span></div></div>`).join('')||'<div class="card sm" style="text-align:center">Henüz F modeli yok. “Yeni F kodu” ile ilkini oluştur.</div>'}
  <div class="row" style="margin-top:10px"><button onclick="go('fm',null,{sub:'trash'})">🗑 Çöp (${nT})</button><button onclick="go('fm',null,{sub:'arc'})">📦 Arşiv (${nA})</button></div>`}
 function fmTo(k,t){if(!S.fm[k])return;if(!S.fms)S.fms={};S.fms[k]={t,ts:Date.now()};save();toast(k+(t==='del'?' çöp kutusuna taşındı 🗑':' arşive taşındı 📦'));draw()}
+function fmEmpty(){const L=Object.keys(S.fm).filter(k=>S.fms&&S.fms[k]&&S.fms[k].t==='del');if(L.length)ask(L.length+' model kalıcı olarak silinsin mi? Geri alınamaz. (Kayıtlı denemeler etkilenmez)',()=>{L.forEach(k=>{delete S.fm[k];delete S.fmn[k];delete S.fms[k]});save();draw()})}
 function fmBack(k){if(S.fms)delete S.fms[k];save();toast(k+' geri alındı ↩');draw()}
 function fmPurge(k){ask(k+' modeli kalıcı olarak silinsin mi? Geri alınamaz. (Kayıtlı denemeler etkilenmez)',()=>{delete S.fm[k];delete S.fmn[k];if(S.fms)delete S.fms[k];save();draw()})}
-(function(){const sty=document.createElement('style');sty.textContent='[data-fm],[data-an]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.fmarm{box-shadow:0 6px 18px rgba(0,0,0,.25);position:relative;z-index:3;transition:background .1s}';document.head.appendChild(sty);
- let st=null;const card=e=>e.target&&e.target.closest?e.target.closest('[data-fm],[data-an]'):null;
- const begin=(el,x,y)=>{st={el,x,y,dx:0,armed:false,t:setTimeout(()=>{if(st){st.armed=true;el.classList.add('fmarm');try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}}},380)}};
+(function(){const sty=document.createElement('style');sty.textContent='[data-fm],[data-an],[data-sk]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.fmarm{box-shadow:0 6px 18px rgba(0,0,0,.25);position:relative;z-index:3;transition:background .1s}';document.head.appendChild(sty);
+ let st=null;const card=e=>e.target&&e.target.closest?e.target.closest('[data-sk]'):null;
+ const begin=(el,x,y)=>{if(SEL.on)return;st={el,x,y,dx:0,armed:false,t:setTimeout(()=>{if(st){st.armed=true;el.classList.add('fmarm');try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}}},380)}};
  const move=(x,y,ev)=>{if(!st)return;const dx=x-st.x,dy=y-st.y;
   if(!st.armed){if(Math.abs(dx)>10||Math.abs(dy)>10){clearTimeout(st.t);st=null}return}
   if(ev.cancelable)ev.preventDefault();st.dx=dx;st.el.style.transform='translateX('+dx+'px)';st.el.style.background=dx>50?'#fde2e2':dx<-50?'#dbe8ff':''};
  const end=()=>{if(!st)return;clearTimeout(st.t);const s=st;st=null;if(!s.armed)return;window.__fmSw=Date.now();s.el.classList.remove('fmarm');s.el.style.transform='';s.el.style.background='';
-  const k=s.el.getAttribute('data-fm'),ak=s.el.getAttribute('data-an');if(s.dx>90){ak?anTo(ak,'del'):fmTo(k,'del')}else if(s.dx<-90){ak?anTo(ak,'arc'):fmTo(k,'arc')}};
+  const k=s.el.getAttribute('data-fm'),ak=s.el.getAttribute('data-an');if(s.dx>90&&(k||ak)){ak?anTo(ak,'del'):fmTo(k,'del')}else if(s.dx<-90&&(k||ak)){ak?anTo(ak,'arc'):fmTo(k,'arc')}else if(Math.abs(s.dx)<=30){selStart(s.el)}};
  document.addEventListener('touchstart',e=>{const c=card(e);if(c&&e.touches.length===1)begin(c,e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
  document.addEventListener('touchmove',e=>{if(st&&e.touches.length)move(e.touches[0].clientX,e.touches[0].clientY,e)},{passive:false});
  document.addEventListener('touchend',end);document.addEventListener('touchcancel',()=>{if(st){clearTimeout(st.t);st.el.classList.remove('fmarm');st.el.style.transform='';st.el.style.background='';st=null}});
@@ -294,9 +331,9 @@ function dropRuns(L){L.forEach(r=>{if(DB)dref('r_'+r.id).delete().catch(()=>{});
 function purge(id){ask('Kalıcı olarak silinsin mi? Bu işlem geri alınamaz.',()=>dropRuns(S.runs.filter(r=>r.id===id)))}
 function emptyTrash(){const t=S.runs.filter(r=>r.del);if(t.length)ask(t.length+' kalıp kalıcı olarak silinsin mi? Geri alınamaz.',()=>dropRuns(t))}
 function arcDone(){const L=L0().filter(r=>grpK(r)==='done');if(L.length)ask(L.length+' tamamlanan kalıp arşive taşınsın mı?',()=>{L.forEach(r=>r.arc=Date.now());save();draw()})}
-const miniCard=(r,b)=>`<div class="card"><div class="rc"><b class="mk">${esc(r.mold)}</b><div><b>${fdt(r.date)}</b><div class="sm">${r.recs.map(c=>esc(r.mold)+c.pos+' '+esc(c.f)).join(' · ')}</div></div></div><div class="row">${b}</div></div>`;
+const miniCard=(r,b)=>`<div class="card" data-sk="run" data-sid="${r.id}"><div class="rc"><b class="mk">${esc(r.mold)}</b><div><b>${fdt(r.date)}</b><div class="sm">${r.recs.map(c=>esc(r.mold)+c.pos+' '+esc(c.f)).join(' · ')}</div></div></div><div class="row">${b}</div></div>`;
 function trashScreen(){const L=S.runs.filter(r=>r.del).sort((a,b)=>b.del-a.del);
- return `<button onclick="go('home')">← Ana sayfa</button><h1>🗑 Çöp kutusu</h1><div class="sm" style="margin-bottom:10px">Silinen kalıplar burada durur. Geri yükleyebilir ya da kalıcı silebilirsin. Çöptekiler raporlara girmez.</div>${L.length?`<button class="red" style="width:100%;margin-bottom:10px" onclick="emptyTrash()">Çöpü boşalt (${L.length})</button>`:''}${L.map(r=>miniCard(r,`<button class="ok" onclick="restore('${r.id}')">↩ Geri yükle</button><button class="red" onclick="purge('${r.id}')">Kalıcı sil</button>`)).join('')||'<div class="card sm" style="text-align:center">Çöp kutusu boş.</div>'}`}
+ return `<button onclick="go('home')">← Ana sayfa</button><h1>🗑 Çöp kutusu</h1><div class="sm" style="margin-bottom:10px">Silinen kalıplar burada durur. Geri yükleyebilir ya da kalıcı silebilirsin. Çöptekiler raporlara girmez.</div>${L.length?`<button class="red" style="width:100%;margin-bottom:10px" onclick="emptyTrash()">🗑 Çöpü kalıcı sil (${L.length})</button>`:''}${L.map(r=>miniCard(r,`<button class="ok" onclick="restore('${r.id}')">↩ Geri yükle</button><button class="red" onclick="purge('${r.id}')">Kalıcı sil</button>`)).join('')||'<div class="card sm" style="text-align:center">Çöp kutusu boş.</div>'}`}
 function archScreen(){const L=S.runs.filter(r=>r.arc&&!r.del).sort((a,b)=>b.arc-a.arc);
  return `<button onclick="go('home')">← Ana sayfa</button><h1>📦 Arşiv</h1><div class="sm" style="margin-bottom:10px">Arşivlenen kalıplar ana listeden kalkar ama kayıtları ve raporlardaki verileri korunur.</div>${L.map(r=>miniCard(r,`<button onclick="go('detail','${r.id}')">Aç</button><button class="ok" onclick="arcRun('${r.id}',0)">↩ Arşivden çıkar</button>`)).join('')||'<div class="card sm" style="text-align:center">Arşiv boş.</div>'}`}
 /* tez bölümleri */
@@ -346,11 +383,12 @@ function home(){const tr=L0().filter(r=>r.date===todayISO()).length,ng=L0().redu
  return `<div class="hero"><div class="lg">🔬</div><div><div class="hn">TezLab</div><div class="hs">Deneme Defteri</div><div class="hs" style="font-size:13px;margin-top:3px">İlknur Türkmen · Doktora Tez Çalışması</div></div><div class="hd">${new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</div></div>
  <button class="pri big2" onclick="newForm()">＋ Yeni kalıp</button>
  <div class="row"><button onclick="go('reports')">📊 Raporlar</button><button onclick="go('fm')">🧬 F modelleri</button><button onclick="go('base')">🗂 Temel veriler</button></div>
- <div class="row"><button onclick="go('tez')">📚 Tez</button><button onclick="go('arch')">📦 Arşiv (${na})</button><button onclick="go('trash')">🗑 Çöp (${nt})</button></div>
- <div class="row"><button onclick="go('an')">🧪 Analizler</button><button onclick="go('drive')">☁ Google Drive · yedek ve raporlar</button></div>
+ <div class="row"><button onclick="go('tez')">📚 Tez</button></div>
+ <div class="row"><button onclick="go('an')">🧪 Analizler</button><button onclick="go('drive')">💾 Yedekleme · Drive · raporlar</button></div>
  ${needPanel()}${activePanel()}
  <div class="stats"><div><b>${tr}</b><span>Bugün kalıp</span></div><div><b>${L0().length}</b><span>Toplam kalıp</span></div><div><b>${ng}</b><span>Toplam göz</span></div></div>
  ${grpList()}
+ <div class="row" style="margin-top:10px"><button onclick="go('arch')">📦 Kalıp arşivi (${na})</button><button onclick="go('trash')">🗑 Kalıp çöpü (${nt})</button></div>
  <div class="sm" style="text-align:center;margin-top:14px">${SY.st}${S.drv&&S.drv.last?` · Drive yedeği: ${dstr(S.drv.last)}`:''}</div>`}
 function fSel(v){const c=F.recs[F.pos];
  if(v==='__m'){c.fm=true;c.f='';return draw()}
@@ -416,7 +454,7 @@ function saveRun(next){
  !F.runId&&LV().some(r=>r.date===F.date&&r.mold===m)?ask('Bu tarihte '+m+' kalıbı zaten kayıtlı. Yine de yeni kayıt olarak eklensin mi?',go2):go2()}
 function saveNote(){const r=cur();r.note=$('nt').value.trim();save();draw();toast('Not kaydedildi ✓')}
 const bkCard=()=>`<div class="card"><h3>Yedek ve senkron</h3><div class="sm">${SY.st}. Kayıtlar bu cihazda saklanır; bulut senkronu açıksa telefon ve tablet aynı kayıtları görür.</div><button style="width:100%;margin-top:10px" onclick="backup()">⬇ Yedeği indir (JSON)</button><button class="pri" style="width:100%;margin-top:8px" onclick="go('drive')">☁ Google Drive'a yedekle</button></div>`;
-async function backup(){try{const dl=window.claude&&await claude.use('downloads');if(!dl){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({v:2,S})],{type:'application/json'}));a.download='TezLab_yedek_'+todayISO()+'.json';document.body.appendChild(a);a.click();a.remove();return toast('Yedek hazır ✓')}await dl.save({filename:'TezLab_yedek_'+todayISO()+'.json',data:JSON.stringify({v:2,S})});toast('Yedek hazır ✓')}catch(e){if(!e||e.code!=='declined')alert('İndirme hatası')}}
+async function backup(){const nm='TezLab_yedek_'+nowTag()+'.json',txt=JSON.stringify(bakObj());try{const dl=window.claude&&await claude.use('downloads');if(!dl){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=nm;document.body.appendChild(a);a.click();a.remove()}else await dl.save({filename:nm,data:txt});S.drv.dl=Date.now();lsSave();toast('Yedek hazır ✓');if(V.n==='drive')draw()}catch(e){if(!e||e.code!=='declined')alert('İndirme hatası')}}
 const PF=[['raf','Raf No',1],['rs0','Raf Set Başlangıç (°C)'],['ks0','Kondanser Başlangıç (°C)'],['vs0','Vakum Set Başlangıç (mbar)'],['rs1','Raf Set Son (°C)'],['ks1','Kondanser Son (°C)'],['vs1','Vakum Set Son (mbar)']];
 const tb=(r,k,t,pre,gate)=>{const o=r[k];return `<div class="card c-${k}"><h3>${t}</h3>${pre}<div class="big" id="t-${k}" style="color:var(--${k})">--</div>
  <div class="sm">Başlangıç: ${o.start?dstr(o.start):'—'}<br>Bitiş: ${o.stop?dstr(o.stop):'—'}</div>
@@ -492,7 +530,7 @@ function base(){return `<button onclick="go('home')">← Geri</button><h1>🗂 T
  ${S.ings.map((x,i)=>`<label>Bileşen ${i+1}</label><div class="rw3"><input id="bn${i}" value="${esc(x.n)}"><input id="bk${i}" type="number" inputmode="decimal" step="0.01" min="0" max="100" placeholder="KM %" value="${x.km??''}"><button class="${x.km!=null?'ok':'pri'}" onclick="saveIng(${i})">Kaydet</button></div>`).join('')}
  <div class="sm" style="margin-top:8px">KM değiştirirsen raporlardaki teorik değerler güncel değere göre hesaplanır.</div></div>
  <div class="card"><h3>Deepfreeze modelleri (her satıra bir model)</h3><textarea id="mdl" rows="5">${esc(S.models.join('\n'))}</textarea><button class="pri" style="width:100%;margin-top:10px" onclick="S.models=$('mdl').value.split('\\n').map(s=>s.trim()).filter(Boolean);save();alert('Kaydedildi')">Kaydet</button></div>
- <div class="card"><h3>Freeze dryer modelleri (her satıra bir model)</h3><textarea id="mdl2" rows="4">${esc(S.fdModels.join('\n'))}</textarea><button class="pri" style="width:100%;margin-top:10px" onclick="S.fdModels=$('mdl2').value.split('\\n').map(s=>s.trim()).filter(Boolean);save();alert('Kaydedildi')">Kaydet</button></div>${bkCard()}`}
+ <div class="card"><h3>Freeze dryer modelleri (her satıra bir model)</h3><textarea id="mdl2" rows="4">${esc(S.fdModels.join('\n'))}</textarea><button class="pri" style="width:100%;margin-top:10px" onclick="S.fdModels=$('mdl2').value.split('\\n').map(s=>s.trim()).filter(Boolean);save();alert('Kaydedildi')">Kaydet</button></div>`}
 function saveIng(i){const x=S.ings[i],k=$('bk'+i).value;x.n=$('bn'+i).value.trim()||x.n;x.km=k===''?null:+Number(k).toFixed(2);save();draw();toast('Kaydedildi ✓')}
 
 /* Excel */
@@ -638,6 +676,7 @@ function mergeIn(b){let add=0,upd=0;
  (b.fdModels||[]).forEach(m=>{if(!S.fdModels.includes(m))S.fdModels.push(m)});
  Object.keys(b.fm||{}).forEach(k=>{if(!(k in S.fm))S.fm[k]=b.fm[k]});
  Object.keys(b.fmn||{}).forEach(k=>{if(!(k in S.fmn))S.fmn[k]=b.fmn[k]});
+ Object.keys(b.fms||{}).forEach(k=>{if(!S.fms)S.fms={};if(!(k in S.fms)&&S.fm[k])S.fms[k]=b.fms[k]});
  if(!S.fms)S.fms={};Object.keys(b.fms||{}).forEach(k=>{if(!(k in S.fms)||(b.fms[k].ts||0)>(S.fms[k].ts||0))S.fms[k]=b.fms[k]});
  (b.an||[]).forEach(a=>{const i=S.an.findIndex(x=>x.id===a.id);if(i<0)S.an.push(a);else if((a.ts||0)>(S.an[i].ts||0))S.an[i]=a});
  if(!S.tez.length&&(b.tez||[]).length)S.tez=b.tez;
@@ -722,11 +761,12 @@ async function drSaveAll(){const L=fl();if(!L.length)return alert('Seçili aral�
  if(!await drXl())return;
  if(!await wordOut('log',1))return;if(!await wordOut('tez',1))return;DR.msg='✓ Excel ve Word raporları Drive › TezLab › Raporlar klasörüne kaydedildi';toast(DR.msg);if(V.n==='drive')draw()}
 function driveScreen(){const d=S.drv,busy=DR.busy?'disabled':'';
- return `<button onclick="go('home')">← Ana sayfa</button><h1>☁ Google Drive</h1>
+ return `<button onclick="go('home')">← Ana sayfa</button><h1>💾 Yedekleme ve Drive</h1>
  ${window.GSHIM?gsCard():''}
- <div class="card"><h3>Yedekleme</h3><div class="sm">Konum: Drive › TezLab › Yedekler. Son yedek: ${d.last?dstr(d.last):'henüz yok'}.</div>
+ <div class="card"><h3>Yedekleme</h3><div class="sm"><b>Tüm veriler tek dosyada yedeklenir:</b> ${S.runs.length} kalıp · ${Object.keys(S.fm).length} F modeli · ${S.an.length} analiz · temel veriler · çöp ve arşiv. Yedeği Drive'a alabilir ya da dosya olarak indirebilirsin.<br>Drive konumu: TezLab › Yedekler · Son Drive yedeği: ${d.last?dstr(d.last):'henüz yok'}<br>Son indirilen yedek: ${d.dl?dstr(d.dl):'henüz yok'}</div>
  ${DR.msg?`<div style="margin-top:8px;font-weight:600">${esc(DR.msg)}</div>`:''}
- <button class="pri" style="width:100%;margin-top:10px" ${busy} onclick="drBackup(false)">${DR.busy?'Çalışıyor…':'☁ Şimdi yedekle'}</button>
+ <button class="pri" style="width:100%;margin-top:10px" ${busy} onclick="drBackup(false)">${DR.busy?'Çalışıyor…':'☁ Şimdi yedekle (Drive)'}</button>
+ <button style="width:100%;margin-top:8px" onclick="backup()">⬇ Yedeği indir (JSON)</button>
  <label style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" style="width:22px;height:22px" ${d.auto?'checked':''} ${busy} onchange="drToggle(this.checked)"><span>Otomatik yedekle <span class="sm">(değişiklikten ~2 dk sonra, en sık 30 dakikada bir)</span></span></label></div>
  <div class="card"><h3>Raporlar</h3><div class="sm">Raporlar ekranındaki tarih aralığına göre Excel (.xlsx) ve Word (.docx) dosyaları Drive › TezLab › Raporlar klasörüne kaydedilir.</div>
  <button class="pri" style="width:100%;margin-top:10px" ${busy} onclick="drSaveAll()">☁ Tüm raporları Drive'a kaydet</button>
@@ -751,23 +791,34 @@ const anResH=(b,r)=>{const x=anRow(b,r);return x.km==null?'<span class="sm">son 
 const anStH=b=>{const s=anSt(b);return s.n?`Ortalama KM <b>${f2c(s.m)} %</b> · nem ${f2c(100-s.m)} % · n=${s.n}${s.sd!=null?` · SS ${f2c(s.sd)} · CV ${f2c(s.cv)} %`:''}`:'<span class="sm">Henüz hesaplanan örnek yok</span>'};
 const anFind=(aid)=>S.an.find(x=>x.id===aid);
 function anTouch(a){a.ts=Date.now();save()}
+const anV=(a,b,k)=>b[k]!==undefined?b[k]:(a[k]||'');
+function anDur(a,b){const sd=anV(a,b,'sd'),ed=anV(a,b,'ed');if(!sd||!ed)return '—';const s=new Date(sd+'T'+(anV(a,b,'st')||'00:00')),e=new Date(ed+'T'+(anV(a,b,'et')||'00:00')),ms=e-s;if(isNaN(ms))return '—';if(ms<0)return '⚠ bitiş başlangıçtan önce';const m=Math.round(ms/6e4),h=Math.floor(m/60),d=Math.floor(h/24);return h+' sa '+(m%60)+' dk'+(d?' ('+d+' gün '+(h%24)+' sa)':'')}
+const anLi=(a,b)=>{const s=anSt(b),dev=anV(a,b,'dev'),t=anV(a,b,'temp'),d=anDur(a,b);const bits=[s.n?'KM '+f2c(s.m)+' %':'KM —',dev,t?t+' °C':'',d!=='—'?d:''].filter(Boolean);return `<div class="sm" style="padding:3px 0"><b>${esc(b.name)}</b> · ${bits.map(esc).join(' · ')}</div>`};
+function anBF(aid,bid,k,v){const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid);if(!b)return;b[k]=String(v).trim();anTouch(a);const e=$('dur_'+bid);if(e)e.textContent=anDur(a,b)}
+function anCopyB(aid,bid){const a=anFind(aid),i=a?a.blocks.findIndex(x=>x.id===bid):-1;if(i<1)return;const p=a.blocks[i-1],b=a.blocks[i];['dev','temp','sd','st','ed','et'].forEach(k=>{b[k]=anV(a,p,k)});anTouch(a);draw()}
+function anEmpty(){const L=S.an.filter(a=>a.del&&!a.gone);if(L.length)ask(L.length+' analiz kalıcı olarak silinsin mi? Geri alınamaz.',()=>{const t=Date.now();L.forEach(a=>{a.gone=t;a.blocks=[];a.ts=t});save();draw()})}
 function anS(){const nT=S.an.filter(a=>a.del&&!a.gone).length,nA=S.an.filter(a=>a.arc&&!a.del).length;
  if(V.sub==='trash'||V.sub==='arc')return anBin(V.sub==='trash');
  const L=S.an.filter(a=>!a.del&&!a.arc).sort((a,b)=>b.date.localeCompare(a.date));
  return `<button onclick="go('home')">← Ana sayfa</button><h1>🧪 Analizler</h1>
- <div class="card"><h3>Kuru madde / nem (etüv)</h3><div class="sm">Dara, örnek ve son tartımı gir; KM % ve nem % otomatik hesaplanır. Ortalamayı girdinin teorik KM değerine uygulayabilirsin.</div><button class="pri" style="width:100%;margin-top:10px" onclick="anNew()">+ Yeni kuru madde analizi</button></div>
- <div class="sm" style="margin:6px 0 8px">İpucu: bir analize basılı tutup <b>sağa</b> kaydırırsan çöpe, <b>sola</b> kaydırırsan arşive gider.</div>
- ${L.map(a=>`<div class="card item" data-an="${a.id}" onclick="anOpen('${a.id}')"><b>${fdt(a.date)} · ${esc(a.title)}</b><div class="sm">${a.blocks.map(b=>esc(b.name)).join(', ')}</div><div class="sm">${a.blocks.reduce((n,b)=>n+b.rows.length,0)} örnek · son tartımı girilen: ${a.blocks.reduce((n,b)=>n+b.rows.filter(r=>pf(r.fin)!=null).length,0)}</div></div>`).join('')||'<div class="sm">Henüz analiz yok.</div>'}
+ <div class="card"><h3>% Kuru madde analizi</h3><div class="sm">Dara, örnek ve son tartımı gir; KM % ve nem % otomatik hesaplanır. Ortalamayı girdinin teorik KM değerine uygulayabilirsin.</div><button class="pri" style="width:100%;margin-top:10px" onclick="anNew()">+ Yeni kuru madde analizi</button></div>
+ <div class="sm" style="margin:6px 0 8px">İpucu: bir analize basılı tutup <b>sağa</b> kaydırırsan çöpe, <b>sola</b> kaydırırsan arşive gider. Kaydırmadan bırakırsan seçim kutuları açılır (toplu işlem).</div>
+ ${L.map(a=>`<div class="card item" data-an="${a.id}" data-sk="an" data-sid="${a.id}" onclick="anOpen('${a.id}')"><b>${fdt(a.date)} · ${esc(a.title)}</b>${a.blocks.map(b=>anLi(a,b)).join('')}<div class="sm">${a.blocks.reduce((n,b)=>n+b.rows.length,0)} örnek · son tartımı girilen: ${a.blocks.reduce((n,b)=>n+b.rows.filter(r=>pf(r.fin)!=null).length,0)}</div></div>`).join('')||'<div class="sm">Henüz analiz yok.</div>'}
  <div class="card"><h3>Diğer analizler</h3><div class="sm">Analiz listeni ve yöntemleri (tekrar sayılarıyla) gönderdiğinde buraya yeni analiz türleri eklenecek.</div></div>
  <div class="row" style="margin-top:10px"><button onclick="go('an',null,{sub:'trash'})">🗑 Çöp (${nT})</button><button onclick="go('an',null,{sub:'arc'})">📦 Arşiv (${nA})</button></div>
  <h2>Rapor</h2><div class="grid"><button onclick="anXl(0)">⬇ Excel</button><button onclick="anXl(1)">☁ Excel · Drive'a kaydet</button></div>`}
 function anNew(){const id='an'+Date.now().toString(36);
- const a={id,type:'km',date:todayISO(),title:'Etüv kurutma',temp:'',dev:'',sd:todayISO(),st:'',ed:'',et:'',note:'',ts:Date.now(),blocks:[]};
+ const a={id,type:'km',date:todayISO(),title:'Kuru madde analizi',temp:'',dev:'',sd:todayISO(),st:'',ed:'',et:'',note:'',ts:Date.now(),blocks:[]};
  S.an.push(a);save();go('anD',id)}
 function anBlk(x){const p=AN_PRE[x.id]||x.n.slice(0,2).toUpperCase();
  return {id:'b'+Math.random().toString(36).slice(2,8),iid:x.id,name:x.n,pre:p,gross:x.id==='i3',rows:[1,2].map(n=>anRw(p,n))}}
 const anRw=(p,n)=>({id:'r'+Math.random().toString(36).slice(2,8),code:p+'-'+n,dara:'',smp:'',fin:'',note:''});
 function anBlock(a,b){return `<div class="card" id="blk_${b.id}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">${esc(b.name)}</h3><button onclick="anDelB('${a.id}','${b.id}')">🗑</button></div>
+ <div class="row"><div><label>Cihaz</label><input list="anDevL" placeholder="Cihaz adı" value="${esc(anV(a,b,'dev'))}" onchange="anBF('${a.id}','${b.id}','dev',this.value)"></div><div><label>Sıcaklık (°C)</label><input inputmode="decimal" value="${esc(anV(a,b,'temp'))}" onchange="anBF('${a.id}','${b.id}','temp',this.value)"></div></div>
+ <div class="row"><div><label>Başlangıç tarihi</label><input type="date" value="${anV(a,b,'sd')}" onchange="anBF('${a.id}','${b.id}','sd',this.value)"></div><div><label>Başlangıç saati</label><input type="time" value="${anV(a,b,'st')}" onchange="anBF('${a.id}','${b.id}','st',this.value)"></div></div>
+ <div class="row"><div><label>Bitiş tarihi</label><input type="date" value="${anV(a,b,'ed')}" onchange="anBF('${a.id}','${b.id}','ed',this.value)"></div><div><label>Bitiş saati</label><input type="time" value="${anV(a,b,'et')}" onchange="anBF('${a.id}','${b.id}','et',this.value)"></div></div>
+ <div class="sm" style="margin:4px 0 8px">Süre: <b id="dur_${b.id}">${anDur(a,b)}</b></div>
+ ${a.blocks.indexOf(b)>0?`<button style="width:100%;margin-bottom:8px" onclick="anCopyB('${a.id}','${b.id}')">⧉ Önceki bileşenin cihaz ve zaman bilgisini kopyala</button>`:''}
  <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" style="width:20px;height:20px;min-height:0" ${b.gross?'checked':''} onchange="anGross('${a.id}','${b.id}',this.checked)"><span>Örnek sütununa <b>örnek + dara</b> yazıyorum</span></label>
  ${b.rows.map(r=>`<div class="anr"><div class="anh"><input value="${esc(r.code)}" onchange="anR('${a.id}','${b.id}','${r.id}','code',this.value)"><span id="res_${r.id}">${anResH(b,r)}</span><button onclick="anDelR('${a.id}','${b.id}','${r.id}')">✕</button></div>
  <div class="an3"><input inputmode="decimal" placeholder="Dara (g)" value="${esc(r.dara)}" onchange="anR('${a.id}','${b.id}','${r.id}','dara',this.value)"><input inputmode="decimal" placeholder="${b.gross?'Örnek+dara (g)':'Örnek (g)'}" value="${esc(r.smp)}" onchange="anR('${a.id}','${b.id}','${r.id}','smp',this.value)"><input inputmode="decimal" placeholder="Son tartım (g)" value="${esc(r.fin)}" onchange="anR('${a.id}','${b.id}','${r.id}','fin',this.value)"></div></div>`).join('')}
@@ -777,10 +828,7 @@ function anBlock(a,b){return `<div class="card" id="blk_${b.id}"><div style="dis
 function anD(){const a=anFind(V.id);if(!a)return `<button onclick="go('an')">← Analizler</button>`;
  return `<style>.anh{display:grid;grid-template-columns:84px 1fr auto;gap:6px;align-items:center;margin-bottom:6px}.an3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.anr{padding:8px 0;border-bottom:1px solid var(--bd)}.anr:last-of-type{border-bottom:0}</style>
  <button onclick="go('an')">← Analizler</button><h1 style="font-size:20px">🧪 ${esc(a.title)}</h1>
- <div class="card"><div class="row"><div><label>Tarih</label><input type="date" value="${a.date}" onchange="anF('${a.id}','date',this.value)"></div><div><label>Etüv sıcaklığı (°C)</label><input inputmode="decimal" value="${esc(a.temp)}" onchange="anF('${a.id}','temp',this.value)"></div></div>
- <label>Cihaz (etüv)</label><input list="anDevL" placeholder="Cihaz adı / modeli" value="${esc(a.dev||'')}" onchange="anF('${a.id}','dev',this.value)"><datalist id="anDevL">${[...new Set(S.an.map(x=>x.dev).filter(Boolean))].map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
- <div class="row"><div><label>Başlangıç tarihi</label><input type="date" value="${a.sd||a.date||''}" onchange="anF('${a.id}','sd',this.value)"></div><div><label>Başlangıç saati</label><input type="time" value="${a.st||''}" onchange="anF('${a.id}','st',this.value)"></div></div>
- <div class="row"><div><label>Bitiş tarihi</label><input type="date" value="${a.ed||''}" onchange="anF('${a.id}','ed',this.value)"></div><div><label>Bitiş saati</label><input type="time" value="${a.et||''}" onchange="anF('${a.id}','et',this.value)"></div></div>
+ <div class="card"><label>Tarih</label><input type="date" value="${a.date}" onchange="anF('${a.id}','date',this.value)"><datalist id="anDevL">${[...new Set(S.an.flatMap(x=>[x.dev].concat((x.blocks||[]).map(b=>b.dev))).filter(Boolean))].map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
  <label>Başlık</label><input value="${esc(a.title)}" onchange="anF('${a.id}','title',this.value)"><label>Not</label><textarea rows="2" onchange="anF('${a.id}','note',this.value)">${esc(a.note)}</textarea>
  <div class="sm" style="margin-top:8px">KM % = (son tartım − dara) ÷ örnek × 100. Son tartım, kap + kuru örnek ağırlığıdır.</div></div>
  ${a.blocks.map(b=>anBlock(a,b)).join('')}
@@ -800,14 +848,14 @@ function anTo(id,t){const a=anFind(id);if(!a)return;if(t==='del')a.del=Date.now(
 function anBack(id){const a=anFind(id);if(!a)return;if(a.del)delete a.del;else delete a.arc;anTouch(a);toast('Geri alındı ↩');draw()}
 function anPurge(id){ask('Bu analiz kalıcı olarak silinsin mi? Geri alınamaz.',()=>{const a=anFind(id);if(!a)return;a.gone=Date.now();a.del=a.del||Date.now();a.blocks=[];anTouch(a);draw()})}
 function anBin(tr){const L=S.an.filter(a=>tr?(a.del&&!a.gone):(a.arc&&!a.del)).sort((x,y)=>(tr?y.del-x.del:y.arc-x.arc));
- return `<button onclick="go('an')">← Analizlere dön</button><h1>${tr?'🗑 Analiz çöp kutusu':'📦 Analiz arşivi'}</h1><div class="sm" style="margin-bottom:10px">${tr?'Çöpe attığın analizler burada durur. Geri alabilir ya da kalıcı silebilirsin. Çöptekiler raporlara girmez.':'Arşivlenen analizler ana listeden kalkar; verileri ve raporlardaki yeri korunur.'}</div>
- ${L.map(a=>`<div class="card"><b>${fdt(a.date)} · ${esc(a.title)}</b><div class="sm">${a.blocks.map(b=>esc(b.name)).join(', ')}</div><div class="row">${tr?'':`<button onclick="go('anD','${a.id}')">Aç</button>`}<button class="ok" onclick="anBack('${a.id}')">↩ Geri al</button>${tr?`<button class="red" onclick="anPurge('${a.id}')">Kalıcı sil</button>`:''}</div></div>`).join('')||'<div class="card sm" style="text-align:center">Burada analiz yok.</div>'}`}
+ return `<button onclick="go('an')">← Analizlere dön</button><h1>${tr?'🗑 Analiz çöp kutusu':'📦 Analiz arşivi'}</h1><div class="sm" style="margin-bottom:10px">${tr?'Çöpe attığın analizler burada durur. Geri alabilir ya da kalıcı silebilirsin. Çöptekiler raporlara girmez.':'Arşivlenen analizler ana listeden kalkar; verileri ve raporlardaki yeri korunur.'}</div>${tr&&L.length?`<button class="red" style="width:100%;margin-bottom:10px" onclick="anEmpty()">🗑 Çöpü kalıcı sil (${L.length})</button>`:''}
+ ${L.map(a=>`<div class="card" data-sk="an" data-sid="${a.id}"><b>${fdt(a.date)} · ${esc(a.title)}</b><div class="sm">${a.blocks.map(b=>esc(b.name)).join(', ')}</div><div class="row">${tr?'':`<button onclick="go('anD','${a.id}')">Aç</button>`}<button class="ok" onclick="anBack('${a.id}')">↩ Geri al</button>${tr?`<button class="red" onclick="anPurge('${a.id}')">Kalıcı sil</button>`:''}</div></div>`).join('')||'<div class="card sm" style="text-align:center">Burada analiz yok.</div>'}`}
 function anApply(aid,bid){const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid),s=b&&anSt(b),x=b&&S.ings.find(g=>g.id===b.iid);
  if(!s||!s.n)return alert('Önce son tartımı girilmiş en az bir örnek gerekli');if(!x)return alert('Bu bileşen girdi listesinde yok');
  ask(`“${x.n}” için KM %${f2c(s.m)} olarak kaydedilsin mi? (Şu an: ${x.km==null?'girilmemiş':'%'+f2c(x.km)}) Raporlardaki teorik KM değerleri buna göre hesaplanır.`,()=>{x.km=+s.m.toFixed(2);save();toast('KM güncellendi ✓');draw()})}
 /* Analiz raporu */
 function anWB(){const rows=[],sum=[];
- S.an.filter(a=>!a.del).forEach(a=>a.blocks.forEach(b=>{b.rows.forEach(r=>{const x=anRow(b,r);rows.push({'Tarih':fdt(a.date),'Analiz':a.title,'Etüv °C':a.temp||'','Cihaz':a.dev||'','Başlangıç':[a.sd,a.st].filter(Boolean).join(' '),'Bitiş':[a.ed,a.et].filter(Boolean).join(' '),'Bileşen':b.name,'Örnek kodu':r.code,'Dara (g)':pf(r.dara)??'','Örnek (g)':x.net==null?'':+x.net.toFixed(4),'Son tartım (g)':pf(r.fin)??'','Kuru örnek (g)':x.dry==null?'':+x.dry.toFixed(4),'KM (%)':x.km==null?'':+x.km.toFixed(2),'Nem (%)':x.nem==null?'':+x.nem.toFixed(2),'Not':r.note||''})});
+ S.an.filter(a=>!a.del).forEach(a=>a.blocks.forEach(b=>{b.rows.forEach(r=>{const x=anRow(b,r);rows.push({'Tarih':fdt(a.date),'Analiz':a.title,'Etüv °C':anV(a,b,'temp'),'Cihaz':anV(a,b,'dev'),'Başlangıç':[anV(a,b,'sd'),anV(a,b,'st')].filter(Boolean).join(' '),'Bitiş':[anV(a,b,'ed'),anV(a,b,'et')].filter(Boolean).join(' '),'Süre':anDur(a,b),'Bileşen':b.name,'Örnek kodu':r.code,'Dara (g)':pf(r.dara)??'','Örnek (g)':x.net==null?'':+x.net.toFixed(4),'Son tartım (g)':pf(r.fin)??'','Kuru örnek (g)':x.dry==null?'':+x.dry.toFixed(4),'KM (%)':x.km==null?'':+x.km.toFixed(2),'Nem (%)':x.nem==null?'':+x.nem.toFixed(2),'Not':r.note||''})});
   const s=anSt(b);sum.push({'Tarih':fdt(a.date),'Analiz':a.title,'Bileşen':b.name,'Tekrar (n)':s.n,'Ort. KM (%)':s.n?+s.m.toFixed(2):'','Ort. nem (%)':s.n?+(100-s.m).toFixed(2):'','SS':s.sd!=null?+s.sd.toFixed(2):'','CV (%)':s.cv!=null?+s.cv.toFixed(2):''})}));
  const wb=XLSX.utils.book_new();[['Kuru madde',rows],['Özet',sum]].forEach(([n,r])=>{const ws=XLSX.utils.json_to_sheet(r.length?r:[{}]);ws['!cols']=Object.keys(r[0]||{}).map(h=>({wch:Math.max(13,h.length+2)}));XLSX.utils.book_append_sheet(wb,ws,n)});return wb}
 async function anXl(drv){if(typeof XLSX==='undefined')return alert('Excel kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin.');
@@ -818,7 +866,7 @@ async function anXl(drv){if(typeof XLSX==='undefined')return alert('Excel kütü
  try{const dl=window.claude&&await claude.use('downloads');if(dl){await dl.save({filename:nm,data:XLSX.write(wb,{bookType:'xlsx',type:'array'})});return toast('Excel hazır ✓')}}
  catch(e){if(e&&e.code==='declined')return;if(e&&e.code&&e.code!=='unavailable')return alert('İndirme hatası: '+(e.message||e.code))}
  try{XLSX.writeFile(wb,nm)}catch(x){alert('Bu ekranda dosya indirme kullanılamıyor')}}
-function draw(){$('app').innerHTML={an:anS,anD,drive:driveScreen,home,form,detail,reports,base,fm:fmScreen,fmedit:fmEdit,trash:trashScreen,arch:archScreen,tez:tezScreen,doc:docScreen}[V.n]();tick()}
+function draw(){$('app').innerHTML={an:anS,anD,drive:driveScreen,home,form,detail,reports,base,fm:fmScreen,fmedit:fmEdit,trash:trashScreen,arch:archScreen,tez:tezScreen,doc:docScreen}[V.n]();tick();selDecor()}
 if(window.GSHIM){gsInit();if(window.GS_ERR)GS.msg=window.GS_ERR;if(window.GS_AUTO){go('drive');setTimeout(()=>gsSync(false),600)}}
 setInterval(tick,1000);draw();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
