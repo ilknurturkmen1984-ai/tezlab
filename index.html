@@ -170,6 +170,9 @@ if(!Array.isArray(S.an))S.an=[];
 S.an.forEach(a=>{if(a.title==='Etüv kurutma'){a.title='Kuru madde analizi';a.ts=Date.now()}});
 if(!S.anSeed){S.anSeed=1;if(!S.an.some(a=>a.id==='an_20261110')){const B=(iid,name,pre,gross,rows)=>({id:'b_'+pre.toLowerCase(),iid,name,pre,gross,rows:rows.map((r,i)=>({id:'r_'+pre.toLowerCase()+(i+1),code:pre+'-'+(i+1),dara:r[0],smp:r[1],fin:r[2]||'',note:''}))});
  S.an.push({id:'an_20261110',type:'km',date:'2026-11-10',title:'Kuru madde analizi',temp:'',note:'Kurutma devam ediyor; son tartımlar sonra girilecek.',ts:1,blocks:[B('i3','Laktozsuz süt','S',true,[['2,3536','7,403'],['2,3943','7,4726']]),B('i5','Kabak çekirdeği küspesi','KC',false,[['2,3594','3,0091'],['2,431','3,0067']]),B('i6','Keten tohumu küspesi','KT',false,[['2,4253','3,007'],['2,3745','3,0059']]),B('i4','Cibre','C',false,[['2,3824','3,0052','5,0227'],['2,4162','3,0058','5,0621']]),B('i2','Yulaf ezmesi','Y',false,[['2,4212','3,0021'],['2,39','3,0091']]),B('i1','Ezilmiş gevrek','G',false,[['2,3742','3,0008'],['2,3762','3,0009']])]})}}
+(function(){const L=[];S.an.forEach(a=>{if(a.gone||!a.blocks||a.blocks.length<2)return;const now=Date.now();
+ a.blocks.forEach(b=>{const g=k=>b[k]!==undefined?b[k]:(a[k]||'');const n={id:a.id+'_'+b.iid,type:a.type||'km',date:a.date,title:b.name,note:a.note||'',ts:a.ts||1,blocks:[Object.assign({},b,{dev:g('dev'),temp:g('temp'),sd:g('sd'),st:g('st'),ed:g('ed'),et:g('et')})]};if(a.del)n.del=a.del;if(a.arc)n.arc=a.arc;if(!S.an.some(x=>x.id===n.id))L.push(n)});
+ a.gone=now;a.blocks=[];a.ts=now});S.an.push(...L)})();
 const save=()=>{if(window.GSHIM)gsTouch();lsSave();schedPush();if(typeof drAuto==="function")drAuto()};
 const $=id=>document.getElementById(id);
 function toast(t){let e=$('toast');if(!e){e=document.createElement('div');e.id='toast';e.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;background:#1b1f24;color:#fff;border-radius:12px;padding:14px;font-weight:600;text-align:center;box-shadow:0 4px 16px #0006';document.body.appendChild(e)}e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3500)}
@@ -197,7 +200,7 @@ addEventListener('popstate',e=>{const st=e.state;
  if(NAV.skip){NAV.skip=0;NAV.d=(st&&st.d)||0;return}
  NAV.d=(st&&st.d)||0;SEL.on=false;NAV.selP=false;V=st&&st.V?cp0(st.V):{n:'home',id:null};NAV.cur=JSON.stringify(V);
  NAV.pop=true;try{draw();scrollTo(0,0)}finally{NAV.pop=false}});
-addEventListener('keydown',e=>{if(e.key!=='Backspace'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target,tg=t&&t.tagName;
+addEventListener('keydown',e=>{if((e.key!=='Backspace'&&e.key!=='ArrowLeft')||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target,tg=t&&t.tagName;
  if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT'||(t&&t.isContentEditable))return;if(NAV.d>0){e.preventDefault();history.back()}});
 const selKey=el=>el.getAttribute('data-sk')+':'+el.getAttribute('data-sid');
 function selStart(el){if(SEL.on)return;SEL.on=true;SEL.ids={};SEL.ids[selKey(el)]=1;NAV.d++;try{history.pushState({V:cp0(V),d:NAV.d},'')}catch(e){}NAV.selP=true;try{navigator.vibrate&&navigator.vibrate(20)}catch(e){}draw()}
@@ -674,8 +677,8 @@ function mergeIn(b){let add=0,upd=0;
  (b.ings||[]).forEach(i=>{const l=S.ings.find(x=>x.id===i.id);if(!l)S.ings.push(i);else if(i.ren){l.n=i.n;l.km=i.km}else{if(/^Girdi \d+$/.test(l.n)&&i.n&&!/^Girdi \d+$/.test(i.n))l.n=i.n;if(l.km==null&&i.km!=null)l.km=i.km}});
  (b.models||[]).forEach(m=>{if(!S.models.includes(m))S.models.push(m)});
  (b.fdModels||[]).forEach(m=>{if(!S.fdModels.includes(m))S.fdModels.push(m)});
- Object.keys(b.fm||{}).forEach(k=>{if(!(k in S.fm))S.fm[k]=b.fm[k]});
- Object.keys(b.fmn||{}).forEach(k=>{if(!(k in S.fmn))S.fmn[k]=b.fmn[k]});
+ Object.keys(b.fm||{}).forEach(k=>{if(!(k in S.fm)||b.replaceFm){S.fm[k]=b.fm[k];if(b.replaceFm&&S.fms)delete S.fms[k]}});
+ Object.keys(b.fmn||{}).forEach(k=>{if(!(k in S.fmn)||b.replaceFm)S.fmn[k]=b.fmn[k]});
  Object.keys(b.fms||{}).forEach(k=>{if(!S.fms)S.fms={};if(!(k in S.fms)&&S.fm[k])S.fms[k]=b.fms[k]});
  if(!S.fms)S.fms={};Object.keys(b.fms||{}).forEach(k=>{if(!(k in S.fms)||(b.fms[k].ts||0)>(S.fms[k].ts||0))S.fms[k]=b.fms[k]});
  (b.an||[]).forEach(a=>{const i=S.an.findIndex(x=>x.id===a.id);if(i<0)S.an.push(a);else if((a.ts||0)>(S.an[i].ts||0))S.an[i]=a});
@@ -799,21 +802,21 @@ function anCopyB(aid,bid){const a=anFind(aid),i=a?a.blocks.findIndex(x=>x.id===b
 function anEmpty(){const L=S.an.filter(a=>a.del&&!a.gone);if(L.length)ask(L.length+' analiz kalıcı olarak silinsin mi? Geri alınamaz.',()=>{const t=Date.now();L.forEach(a=>{a.gone=t;a.blocks=[];a.ts=t});save();draw()})}
 function anS(){const nT=S.an.filter(a=>a.del&&!a.gone).length,nA=S.an.filter(a=>a.arc&&!a.del).length;
  if(V.sub==='trash'||V.sub==='arc')return anBin(V.sub==='trash');
- const L=S.an.filter(a=>!a.del&&!a.arc).sort((a,b)=>b.date.localeCompare(a.date));
+ const L=S.an.filter(a=>!a.del&&!a.arc&&!a.gone).sort((a,b)=>b.date.localeCompare(a.date));
  return `<button onclick="go('home')">← Ana sayfa</button><h1>🧪 Analizler</h1>
- <div class="card"><h3>% Kuru madde analizi</h3><div class="sm">Dara, örnek ve son tartımı gir; KM % ve nem % otomatik hesaplanır. Ortalamayı girdinin teorik KM değerine uygulayabilirsin.</div><button class="pri" style="width:100%;margin-top:10px" onclick="anNew()">+ Yeni kuru madde analizi</button></div>
+ <div class="card"><h3>% Kuru madde analizi</h3><div class="sm">Dara, örnek ve son tartımı gir; KM % ve nem % otomatik hesaplanır. Ortalamayı girdinin teorik KM değerine uygulayabilirsin.</div><label style="margin-top:10px">Hangi bileşen için?</label><div class="row"><select id="anNewI">${S.ings.map(i=>`<option value="${i.id}">${esc(i.n)}</option>`).join('')}</select><button class="pri" onclick="anNew()">+ Başlat</button></div><div class="sm" style="margin-top:6px">Her bileşenin analizi ayrı kayıt olarak açılır.</div></div>
  <div class="sm" style="margin:6px 0 8px">İpucu: bir analize basılı tutup <b>sağa</b> kaydırırsan çöpe, <b>sola</b> kaydırırsan arşive gider. Kaydırmadan bırakırsan seçim kutuları açılır (toplu işlem).</div>
- ${L.map(a=>`<div class="card item" data-an="${a.id}" data-sk="an" data-sid="${a.id}" onclick="anOpen('${a.id}')"><b>${fdt(a.date)} · ${esc(a.title)}</b>${a.blocks.map(b=>anLi(a,b)).join('')}<div class="sm">${a.blocks.reduce((n,b)=>n+b.rows.length,0)} örnek · son tartımı girilen: ${a.blocks.reduce((n,b)=>n+b.rows.filter(r=>pf(r.fin)!=null).length,0)}</div></div>`).join('')||'<div class="sm">Henüz analiz yok.</div>'}
+ ${L.map(a=>`<div class="card item" data-an="${a.id}" data-sk="an" data-sid="${a.id}" onclick="anOpen('${a.id}')"><b>${fdt(a.date)} · ${esc(a.title)}</b>${a.blocks.map(b=>anLi(a,b).replace('<b>'+esc(b.name)+'</b> · ','')).join('')}<div class="sm">${a.blocks.reduce((n,b)=>n+b.rows.length,0)} örnek · son tartımı girilen: ${a.blocks.reduce((n,b)=>n+b.rows.filter(r=>pf(r.fin)!=null).length,0)}</div></div>`).join('')||'<div class="sm">Henüz analiz yok.</div>'}
  <div class="card"><h3>Diğer analizler</h3><div class="sm">Analiz listeni ve yöntemleri (tekrar sayılarıyla) gönderdiğinde buraya yeni analiz türleri eklenecek.</div></div>
  <div class="row" style="margin-top:10px"><button onclick="go('an',null,{sub:'trash'})">🗑 Çöp (${nT})</button><button onclick="go('an',null,{sub:'arc'})">📦 Arşiv (${nA})</button></div>
  <h2>Rapor</h2><div class="grid"><button onclick="anXl(0)">⬇ Excel</button><button onclick="anXl(1)">☁ Excel · Drive'a kaydet</button></div>`}
-function anNew(){const id='an'+Date.now().toString(36);
- const a={id,type:'km',date:todayISO(),title:'Kuru madde analizi',temp:'',dev:'',sd:todayISO(),st:'',ed:'',et:'',note:'',ts:Date.now(),blocks:[]};
+function anNew(){const id='an'+Date.now().toString(36),x=S.ings.find(g=>g.id===$('anNewI').value);if(!x)return;
+ const a={id,type:'km',date:todayISO(),title:x.n,note:'',ts:Date.now(),blocks:[Object.assign(anBlk(x),{sd:todayISO()})]};
  S.an.push(a);save();go('anD',id)}
 function anBlk(x){const p=AN_PRE[x.id]||x.n.slice(0,2).toUpperCase();
  return {id:'b'+Math.random().toString(36).slice(2,8),iid:x.id,name:x.n,pre:p,gross:x.id==='i3',rows:[1,2].map(n=>anRw(p,n))}}
 const anRw=(p,n)=>({id:'r'+Math.random().toString(36).slice(2,8),code:p+'-'+n,dara:'',smp:'',fin:'',note:''});
-function anBlock(a,b){return `<div class="card" id="blk_${b.id}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">${esc(b.name)}</h3><button onclick="anDelB('${a.id}','${b.id}')">🗑</button></div>
+function anBlock(a,b){return `<div class="card" id="blk_${b.id}"><h3 style="margin:0 0 8px">${esc(b.name)}</h3>
  <div class="row"><div><label>Cihaz</label><input list="anDevL" placeholder="Cihaz adı" value="${esc(anV(a,b,'dev'))}" onchange="anBF('${a.id}','${b.id}','dev',this.value)"></div><div><label>Sıcaklık (°C)</label><input inputmode="decimal" value="${esc(anV(a,b,'temp'))}" onchange="anBF('${a.id}','${b.id}','temp',this.value)"></div></div>
  <div class="row"><div><label>Başlangıç tarihi</label><input type="date" value="${anV(a,b,'sd')}" onchange="anBF('${a.id}','${b.id}','sd',this.value)"></div><div><label>Başlangıç saati</label><input type="time" value="${anV(a,b,'st')}" onchange="anBF('${a.id}','${b.id}','st',this.value)"></div></div>
  <div class="row"><div><label>Bitiş tarihi</label><input type="date" value="${anV(a,b,'ed')}" onchange="anBF('${a.id}','${b.id}','ed',this.value)"></div><div><label>Bitiş saati</label><input type="time" value="${anV(a,b,'et')}" onchange="anBF('${a.id}','${b.id}','et',this.value)"></div></div>
@@ -832,7 +835,7 @@ function anD(){const a=anFind(V.id);if(!a)return `<button onclick="go('an')">←
  <label>Başlık</label><input value="${esc(a.title)}" onchange="anF('${a.id}','title',this.value)"><label>Not</label><textarea rows="2" onchange="anF('${a.id}','note',this.value)">${esc(a.note)}</textarea>
  <div class="sm" style="margin-top:8px">KM % = (son tartım − dara) ÷ örnek × 100. Son tartım, kap + kuru örnek ağırlığıdır.</div></div>
  ${a.blocks.map(b=>anBlock(a,b)).join('')}
- <div class="card"><h3>Bileşen ekle</h3>${a.blocks.length?'':'<div class="sm">Bu analizde çalıştığın bileşenleri seçip tek tek ekle.</div>'}<div class="row"><select id="anAdd">${S.ings.map(i=>`<option value="${i.id}">${esc(i.n)}</option>`).join('')}</select><button onclick="anAddB('${a.id}')">+ Ekle</button></div></div>
+ ${a.blocks.length?'':`<div class="card"><h3>Bileşen seç</h3><div class="row"><select id="anAdd">${S.ings.map(i=>`<option value="${i.id}">${esc(i.n)}</option>`).join('')}</select><button onclick="anAddB('${a.id}')">+ Ekle</button></div></div>`}
  <button class="red" style="width:100%" onclick="anDel('${a.id}')">🗑 Analizi sil</button>`}
 function anF(aid,k,v){const a=anFind(aid);if(!a)return;a[k]=v;anTouch(a)}
 function anR(aid,bid,rid,k,v){const a=anFind(aid),b=a&&a.blocks.find(x=>x.id===bid),r=b&&b.rows.find(x=>x.id===rid);if(!r)return;r[k]=v.trim();anTouch(a);
