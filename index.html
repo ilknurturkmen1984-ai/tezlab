@@ -653,10 +653,16 @@ async function drPut(dir,title,mime,c){
  const r=await drCall('create_file',a);if(!r.id)throw {message:'Dosya oluşturulamadı'};return r}
 const hashS=()=>{const s=JSON.stringify([S.runs.map(stripTs),cfgO()]);let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return s.length+':'+h};
 const bakObj=()=>{const o=Object.assign({},S);delete o.drv;return {v:3,at:new Date().toISOString(),S:o}};
+const BAK_KEEP=10;
+async function drTrash(id){if(window.GSHIM&&GSHIM.req&&!window.claude){await GSHIM.req('https://www.googleapis.com/drive/v3/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})})}else await drCall('trash_file',{fileId:id})}
+async function drPrune(){try{const d=await drDirs();const r=await drCall('search_files',{query:`parentId = '${d.bak}' and trashed = false and mimeType != '${FMIME}'`,orderBy:'modifiedTime desc',pageSize:100,excludeContentSnippets:true});
+ const L=(r.files||[]).filter(f=>/^TezLab_yedek_.*\.json$/.test(f.title)).sort((a,b)=>String(b.modifiedTime||b.title).localeCompare(String(a.modifiedTime||a.title)));
+ let n=0;for(const f of L.slice(BAK_KEEP)){try{await drTrash(f.id);n++}catch(e){break}}return n}catch(e){return 0}}
+async function drClean(){if(DR.busy)return;DR.busy=true;DR.msg='';draw();try{const n=await drPrune();DR.msg=n?`✓ ${n} eski yedek Drive çöpüne taşındı (son ${BAK_KEEP} yedek duruyor)`:`Temizlenecek eski yedek yok (son ${BAK_KEEP} yedek tutuluyor)`;toast(DR.msg)}catch(e){DR.msg=drErr(e)}DR.busy=false;draw()}
 async function drBackup(auto){if(DR.busy)return;DR.busy=true;DR.msg='';if(V.n==='drive')draw();
  try{const d=await drDirs(),nm='TezLab_yedek_'+nowTag()+'.json';
   await drPut(d.bak,nm,'application/json',{text:JSON.stringify(bakObj())});
-  S.drv.last=Date.now();S.drv.h=hashS();lsSave();DR.list=null;DR.msg='✓ Yedeklendi: '+nm;if(!auto)toast(DR.msg)}
+  S.drv.last=Date.now();S.drv.h=hashS();lsSave();DR.list=null;const pr=await drPrune();DR.msg='✓ Yedeklendi: '+nm+(pr?` · ${pr} eski yedek temizlendi`:'');if(!auto)toast(DR.msg)}
  catch(e){DR.msg=drErr(e);if(!auto)toast(DR.msg)}
  DR.busy=false;if(V.n==='drive')draw()}
 function drAuto(){if(!S.drv||!S.drv.auto)return;if(window.GSHIM&&!window.claude&&!GSHIM.valid())return;clearTimeout(DR.t);
@@ -770,6 +776,7 @@ function driveScreen(){const d=S.drv,busy=DR.busy?'disabled':'';
  ${DR.msg?`<div style="margin-top:8px;font-weight:600">${esc(DR.msg)}</div>`:''}
  <button class="pri" style="width:100%;margin-top:10px" ${busy} onclick="drBackup(false)">${DR.busy?'Çalışıyor…':'☁ Şimdi yedekle (Drive)'}</button>
  <button style="width:100%;margin-top:8px" onclick="backup()">⬇ Yedeği indir (JSON)</button>
+ <button style="width:100%;margin-top:8px" ${DR.busy?'disabled':''} onclick="drClean()">🧹 Eski yedekleri şimdi temizle</button><div class="sm" style="margin-top:6px">Her yedeklemeden sonra Drive'da yalnızca son ${BAK_KEEP} yedek tutulur; eskileri Drive çöpüne gider (30 gün geri alınabilir).</div>
  <label style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" style="width:22px;height:22px" ${d.auto?'checked':''} ${busy} onchange="drToggle(this.checked)"><span>Otomatik yedekle <span class="sm">(değişiklikten ~2 dk sonra, en sık 30 dakikada bir)</span></span></label></div>
  <div class="card"><h3>Raporlar</h3><div class="sm">Raporlar ekranındaki tarih aralığına göre Excel (.xlsx) ve Word (.docx) dosyaları Drive › TezLab › Raporlar klasörüne kaydedilir.</div>
  <button class="pri" style="width:100%;margin-top:10px" ${busy} onclick="drSaveAll()">☁ Tüm raporları Drive'a kaydet</button>
