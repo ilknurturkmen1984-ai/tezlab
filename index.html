@@ -131,7 +131,7 @@ function gsObj(){const c=cfgO();return {v:3,at:new Date().toISOString(),runs:S.r
 function gsApply(rm){let ch=0;
  (rm.runs||[]).forEach(r=>{const i=S.runs.findIndex(x=>x.id===r.id);if(i<0){S.runs.push(r);ch++}else if((r.ts||0)>(S.runs[i].ts||0)){S.runs[i]=r;ch++}});
  const rc=rm.cfg||{};S.an=anMerge(S.an,rc.an);
- if((rm.cts||0)>(S.cts||0)){CFGK.forEach(k=>{if(rc[k]!==undefined)S[k]=rc[k]});S.cts=rm.cts;ch++;try{fmFix()}catch(e){}}
+ if((rm.cts||0)>(S.cts||0)){const emp=v=>v==null||(Array.isArray(v)?!v.length:typeof v==='object'&&!Object.keys(v).length);CFGK.forEach(k=>{if(rc[k]!==undefined&&!(emp(rc[k])&&!emp(S[k])&&(k==='fm'||k==='fmn'||k==='ings')))S[k]=rc[k]});if(emp(rc.fm)&&!emp(S.fm))S.cts=Date.now();S.cts=rm.cts;ch++;try{fmFix()}catch(e){}}
  S.runs.forEach(r=>{GS.H[r.id]=stripTs(r)});GS.hc=JSON.stringify(cfgO());return ch}
 async function gsFile(){if(GS.gid)return GS.gid;const d=await drDirs();
  const r=await drCall('search_files',{query:`parentId = '${d.root}' and title = 'tezlab_veri.json' and trashed = false`,pageSize:2,excludeContentSnippets:true});
@@ -689,6 +689,7 @@ function mergeIn(b){let add=0,upd=0;
  if(!S.fms)S.fms={};Object.keys(b.fms||{}).forEach(k=>{if(!(k in S.fms)||(b.fms[k].ts||0)>(S.fms[k].ts||0))S.fms[k]=b.fms[k]});
  (b.an||[]).forEach(a=>{const i=S.an.findIndex(x=>x.id===a.id);if(i<0)S.an.push(a);else if((a.ts||0)>(S.an[i].ts||0))S.an[i]=a});
  if(!S.tez.length&&(b.tez||[]).length)S.tez=b.tez;
+ if(Object.keys(b.fm||{}).length)S.cts=Date.now();
  return {add,upd}}
 function drRestore(id,title){ask('"'+title+'" yedeği mevcut kayıtlarla birleştirilsin mi? Hiçbir kayıt silinmez; yalnızca eksik ya da daha yeni kayıtlar eklenir.',async()=>{
  DR.busy=true;DR.msg='';draw();
