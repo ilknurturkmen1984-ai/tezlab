@@ -226,7 +226,8 @@ document.addEventListener('click',e=>{if(!SEL.on)return;if(e.target.closest&&e.t
 (function(){const st=document.createElement('style');st.textContent='[data-sk]{position:relative}.selbox{position:absolute;top:12px;right:12px;width:26px;height:26px;margin:0;z-index:2;pointer-events:none}.selon{outline:2px solid #2d6cdf;background:#eef4ff!important}.selmode [data-sk]{padding-right:48px}#app.selmode{padding-bottom:140px}.selbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid #d0d5dd;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 14px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:8px}.selrow{display:flex;gap:8px;align-items:center}.selrow b{flex:1}.selrow button{flex:1}.selrow button.x{flex:0 0 52px}';document.head.appendChild(st)})();
 const go=(n,id,x)=>{if(SEL.on){SEL.on=false;NAV.selP=false}V=Object.assign({n,id:id||null},x||{});draw();scrollTo(0,0);navPush()};
 const cur=()=>S.runs.find(x=>x.id===V.id);
-const fOpts=()=>[...new Set([...Array.from({length:24},(_,i)=>'F'+p2(i+1)),...Object.keys(S.fm)])].filter(k=>!(S.fms&&S.fms[k]));
+const fNat=(a,b)=>a.localeCompare(b,'tr',{numeric:true});
+const fOpts=()=>{const L=Object.keys(S.fm).filter(k=>!(S.fms&&S.fms[k])).sort(fNat);return L.length?L:Array.from({length:24},(_,i)=>'F'+p2(i+1))};
 const fTpl=f=>(S.fm[f]||[]).map(o=>{const x=S.ings.find(a=>a.id===o.id);return x?Object.assign({},x,{rg:o.g}):null}).filter(Boolean);
 let HM={all:false},BF='';
 function newForm(d){d=d||todayISO();const u=LV().filter(r=>r.date===d).map(r=>r.mold);
@@ -411,7 +412,7 @@ function form(){
  <label>F modeli</label><select onchange="fSel(this.value)"><option value="">F kodu seç…</option>${fOpts().map(o=>`<option ${!c.fm&&o===c.f?'selected':''}>${esc(o)}</option>`).join('')}<option value="__m" ${c.fm?'selected':''}>✎ Manuel kod gir…</option></select>
  ${c.fm?`<input style="margin-top:6px;text-transform:uppercase" placeholder="Manuel F kodu (örn. F25)" value="${esc(c.f)}" onchange="fMan(this.value)">`:''}
  ${tp.length?`<div class="sm" style="margin-top:6px">${esc(c.f)}${S.fmn[c.f]?' ('+esc(S.fmn[c.f])+')':''} içeriği: <b>${tp.map(x=>esc(x.n)+(x.rg!=null?' '+x.rg:'')).join(' · ')}</b></div>`:''}
- <div class="sm" style="margin:6px 0 10px">Deneme adı: <b>${F.date&&c.f?ddmmyyyy(F.date)+esc(c.f):'—'}</b></div>
+ <label>Deneme adı</label><input value="${esc(c.nm||'')}" placeholder="${F.date&&c.f?ddmmyyyy(F.date)+esc(c.f):'Önce F kodu seç'}" onchange="F.recs[F.pos].nm=this.value.trim()"><div class="sm" style="margin:4px 0 10px">Boş bırakırsan ad, tarih ve F kodundan otomatik oluşur (tarihi değiştirirsen o da değişir).</div>
  ${c.rows.map((r,i)=>`<div class="rw"><select ${r.saved?'disabled':''} onchange="F.recs[F.pos].rows[${i}].iid=this.value;draw()"><option value="">Girdi seç…</option>${S.ings.filter(n=>n.id===r.iid||!used.includes(n.id)).map(n=>`<option value="${n.id}" ${n.id===r.iid?'selected':''}>${esc(n.n)}</option>`).join('')}</select>
  <input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00 g" value="${esc(r.g)}" ${r.saved?'disabled':''} ${r.ref?'style="border-color:var(--hy)"':''} oninput="F.recs[F.pos].rows[${i}].g=this.value;F.recs[F.pos].rows[${i}].ref=false;this.style.borderColor=''">
  <button class="${r.saved?'ok':'pri'}" onclick="rowBtn(${i})">${r.saved?'✓ Düzenle':'Kaydet'}</button><button onclick="F.recs[F.pos].rows.splice(${i},1);draw()">✕</button></div>`).join('')}
@@ -425,13 +426,13 @@ function rowBtn(i){const r=F.recs[F.pos].rows[i];
  draw()}
 function cp(){let p=null;for(let i=F.pos-1;i>=0&&!p;i--)if(F.recs[i].rows.some(r=>r.saved))p=F.recs[i];
  if(!p)return alert('Kopyalanacak dolu göz yok');
- const k=F.recs[F.pos];F.recs[F.pos]={f:p.f,fm:p.fm,hydStart:k.hydStart,rows:p.rows.filter(r=>r.saved).map(r=>({iid:r.iid,g:r.g,saved:false}))};
+ const k=F.recs[F.pos];F.recs[F.pos]={f:p.f,fm:p.fm,nm:'',hydStart:k.hydStart,rows:p.rows.filter(r=>r.saved).map(r=>({iid:r.iid,g:r.g,saved:false}))};
  toast('Önceki gözden kopyalandı — miktarları düzenleyip kaydedin');draw()}
 function build(strict){const old=S.runs.find(r=>r.id===F.runId),recs=[];
  for(let i=0;i<8;i++){const c=F.recs[i],it=c.rows.filter(r=>r.saved||(r.iid&&!r.ref&&parseFloat(r.g)>0));if(!it.length)continue;
   if(!c.f){if(strict){alert('Göz '+F.mold+(i+1)+' için F kodunu seçin veya girin');return null}continue}
   const o=old&&old.recs.find(x=>x.pos===i+1);
-  recs.push({pos:i+1,f:c.f,name:ddmmyyyy(F.date)+c.f,dry:o?o.dry:null,hyd:o&&o.hyd.start?o.hyd:(c.hydStart?{start:c.hydStart}:{}),items:it.map(r=>({iid:r.iid,ing:S.ings.find(a=>a.id===r.iid).n,g:parseFloat(r.g)}))})}
+  recs.push({pos:i+1,f:c.f,name:c.nm||ddmmyyyy(F.date)+c.f,dry:o?o.dry:null,hyd:o&&o.hyd.start?o.hyd:(c.hydStart?{start:c.hydStart}:{}),items:it.map(r=>({iid:r.iid,ing:S.ings.find(a=>a.id===r.iid).n,g:parseFloat(r.g)}))})}
  return recs}
 function upsert(recs){let r=S.runs.find(x=>x.id===F.runId);
  if(r){r.date=F.date;r.mold=F.mold;r.recs=recs}
@@ -455,6 +456,8 @@ function saveRun(next){
  if(!recs.length)return alert('En az bir gözde bileşen girin');
  const m=F.mold,go2=()=>{const r=upsert(recs);toast('Kalıp '+m+' kaydedildi ('+recs.length+'/8 göz)');next?newForm(F.date):go('detail',r.id)};
  !F.runId&&LV().some(r=>r.date===F.date&&r.mold===m)?ask('Bu tarihte '+m+' kalıbı zaten kayıtlı. Yine de yeni kayıt olarak eklensin mi?',go2):go2()}
+function runDate(v){const r=cur();if(!r||!v||v===r.date)return;const o=r.date;r.recs.forEach(c=>{if(c.name===ddmmyyyy(o)+c.f)c.name=ddmmyyyy(v)+c.f});r.date=v;save();draw();toast('Tarih güncellendi ✓ Deneme adları da yenilendi')}
+function recName(pos,v){const r=cur(),c=r&&r.recs.find(x=>x.pos===pos);if(!c)return;c.name=v.trim()||ddmmyyyy(r.date)+c.f;save();draw();toast('Deneme adı kaydedildi ✓')}
 function saveNote(){const r=cur();r.note=$('nt').value.trim();save();draw();toast('Not kaydedildi ✓')}
 const bkCard=()=>`<div class="card"><h3>Yedek ve senkron</h3><div class="sm">${SY.st}. Kayıtlar bu cihazda saklanır; bulut senkronu açıksa telefon ve tablet aynı kayıtları görür.</div><button style="width:100%;margin-top:10px" onclick="backup()">⬇ Yedeği indir (JSON)</button><button class="pri" style="width:100%;margin-top:8px" onclick="go('drive')">☁ Google Drive'a yedekle</button></div>`;
 async function backup(){const nm='TezLab_yedek_'+nowTag()+'.json',txt=JSON.stringify(bakObj());try{const dl=window.claude&&await claude.use('downloads');if(!dl){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=nm;document.body.appendChild(a);a.click();a.remove()}else await dl.save({filename:nm,data:txt});S.drv.dl=Date.now();lsSave();toast('Yedek hazır ✓');if(V.n==='drive')draw()}catch(e){if(!e||e.code!=='declined')alert('İndirme hatası')}}
@@ -498,7 +501,7 @@ function detail(){const r=cur();if(!r)return home();
  else if(t==='fd')b=tb(r,'fd','Freeze dryer (ileri sayım)',(sst(r,'ms')!==2?'<div class="sm" style="color:var(--hy);margin-bottom:6px">⚠ Başlatmak için önce her gözün donuk kütlesini girin (⚖️ sekmesi)</div>':'')+`<label>Model</label><select id="fdm" ${r.fd.start?'disabled':''}><option value="">Model seç…</option>${S.fdModels.map(m=>`<option ${m===r.fd.model?'selected':''}>${esc(m)}</option>`).join('')}</select>`+fin(r,['raf','rs0','ks0','vs0'],r.fd.start)+cpb('cpFd()',r.fd.start)+sv(0,r.fd.saved0,'saveFd(0)',r.fd.start),r.fd.saved0&&sst(r,'ms')===2);
  else if(t==='fds')b=`<div class="card c-fd"><h3>Freeze dryer – son değerler</h3>${r.fd.start?'':'<div class="sm">Freeze dryer henüz başlamadı.</div>'}${fin(r,['rs1','ks1','vs1'])}${sv(0,r.fd.saved1,'saveFd(1)')}</div>`;
  else b='<h3 style="margin:4px 0 8px">Kuru kütle (göz başına)</h3>'+dryCards(r);
- return `<button onclick="go('home')">← Ana ekran</button><h1>Kalıp ${esc(r.mold)} · ${fdt(r.date)}</h1>${tabBar(r,t)}${b}${(()=>{const L=needs(r).filter(n=>n.tab!==t);return L.length?L.map(needBtn).join(''):nb(r,t)})()}<div class="card" style="margin-top:12px"><h3>📝 Kalıp notu</h3><textarea id="nt" rows="3" placeholder="Gözlem, sapma, not…">${esc(r.note||'')}</textarea>${sv(0,!!r.note,'saveNote()')}</div><div class="row" style="margin-top:14px"><button onclick="arcRun('${r.id}',${r.arc?0:1})">${r.arc?'↩ Arşivden çıkar':'📦 Arşivle'}</button><button class="red" onclick="delRun('${r.id}')">🗑 Çöpe taşı</button></div>`}
+ return `<button onclick="go('home')">← Ana ekran</button><h1>Kalıp ${esc(r.mold)} · ${fdt(r.date)}</h1>${tabBar(r,t)}${b}${(()=>{const L=needs(r).filter(n=>n.tab!==t);return L.length?L.map(needBtn).join(''):nb(r,t)})()}<div class="card" style="margin-top:12px"><h3>📅 Tarih ve deneme adları</h3><label>Tarih (analiz günü)</label><input type="date" value="${r.date}" onchange="runDate(this.value)"><div class="sm" style="margin:4px 0 8px">Tarihi değiştirirsen otomatik adlı denemelerin adı da yenilenir.</div>${r.recs.map(c=>`<label>${esc(r.mold)}${c.pos} · ${esc(c.f)}</label><input value="${esc(c.name)}" onchange="recName(${c.pos},this.value)">`).join('')}</div><div class="card" style="margin-top:12px"><h3>📝 Kalıp notu</h3><textarea id="nt" rows="3" placeholder="Gözlem, sapma, not…">${esc(r.note||'')}</textarea>${sv(0,!!r.note,'saveNote()')}</div><div class="row" style="margin-top:14px"><button onclick="arcRun('${r.id}',${r.arc?0:1})">${r.arc?'↩ Arşivden çıkar':'📦 Arşivle'}</button><button class="red" onclick="delRun('${r.id}')">🗑 Çöpe taşı</button></div>`}
 function saveDf(){const r=cur(),m=$('dfm').value,t=$('dft').value;if(!m||t==='')return alert('Model ve sıcaklığı girin');r.df.model=m;r.df.temp=-Math.abs(Number(t));r.df.saved=true;save();draw();toast('Kaydedildi ✓ Şimdi Başlat\'a basabilirsin')}
 function saveMass(){const r=cur(),v=$('ms').value;if(v==='')return alert('Kütle girin');r.mass=+Number(v).toFixed(2);r.massSaved=true;save();draw();toast('Kaydedildi ✓')}
 function saveFd(n){const r=cur(),ks=n?['rs1','ks1','vs1']:['raf','rs0','ks0','vs0'];
